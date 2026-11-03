@@ -184,8 +184,8 @@ function finishDrag(e){
 }
 canvas.addEventListener('pointerup',finishDrag);
 canvas.addEventListener('pointercancel',()=>{if(drag){restoreState(drag.before);drag=null;draw();}});
-rotateBtn.addEventListener('click',()=>{if(!selected)return;history.push(saveState());if(selected.placed)selected.placed=false;selected.cells=rotate(selected.cells);draw();});
-flipBtn.addEventListener('click',()=>{if(!selected)return;history.push(saveState());if(selected.placed)selected.placed=false;selected.cells=flip(selected.cells);draw();});
+rotateBtn.addEventListener('click',()=>{if(!selected)return;if(selected.placed)selected.placed=false;selected.cells=rotate(selected.cells);draw();});
+flipBtn.addEventListener('click',()=>{if(!selected)return;if(selected.placed)selected.placed=false;selected.cells=flip(selected.cells);draw();});
 resetBtn.addEventListener('click',()=>{history.push(saveState());for(const p of pieces){p.cells=definitions[p.id][1].map(([x,y])=>[x,y]);p.placed=false;p.x=0;p.y=0;}selected=null;drag=null;draw();});
 undoBtn.addEventListener('click',undo);
 window.addEventListener('resize',resize);resize();
