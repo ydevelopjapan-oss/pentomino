@@ -153,7 +153,6 @@ function draw(){
  for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(boardX+x*cell,boardY);ctx.lineTo(boardX+x*cell,boardY+ROWS*cell);ctx.stroke();}
  for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(boardX,boardY+y*cell);ctx.lineTo(boardX+COLS*cell,boardY+y*cell);ctx.stroke();}
  for(const p of pieces)if(p.placed&&!(drag&&drag.piece===p))drawPiece(p.cells,boardX+p.x*cell,boardY+p.y*cell,cell,p.color);
-// ctx.fillStyle='#536176';ctx.fillText('ピース（全12種類）',12,trayY-18);
  for(const p of pieces)if(!p.placed&&!(drag&&drag.piece===p)){
   const o=trayOrigin(p),d=dims(p.cells);drawPiece(p.cells,o.x,o.y,mini,p.color);
   ctx.fillStyle='#4d5b70';ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.fillText(p.name,o.x+d.w*mini/2,o.y+d.h*mini+14);ctx.textAlign='left';
@@ -180,7 +179,7 @@ function finishDrag(e){
  const x=Math.round((pt.x-boardX)/cell-d.grabX),y=Math.round((pt.y-boardY)/cell-d.grabY);
  const valid=p.cells.every(([cx,cy])=>{const bx=x+cx,by=y+cy;if(bx<0||bx>=COLS||by<0||by>=ROWS)return false;return!pieces.some(q=>q!==p&&q.placed&&q.cells.some(([qx,qy])=>q.x+qx===bx&&q.y+qy===by));});
  const inside=pt.x>=boardX-5&&pt.x<=boardX+COLS*cell+5&&pt.y>=boardY-5&&pt.y<=boardY+ROWS*cell+5;
- if(valid&&inside){history.push(d.before);p.x=x;p.y=y;p.placed=true;}else {restoreState(d.before);selected=p;}
+ if(valid&&inside){history.push(d.before);p.x=x;p.y=y;p.placed=true;}else if(d.before.pieces[p.id].placed&&pt.y>=trayY){history.push(d.before);p.placed=false;selected=p}else {restoreState(d.before);selected=p;}
  drag=null;draw();
 }
 canvas.addEventListener('pointerup',finishDrag);
