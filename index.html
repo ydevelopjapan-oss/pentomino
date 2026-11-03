@@ -17,34 +17,19 @@ button:disabled{opacity:.4;cursor:not-allowed}#status{margin-left:auto;font-size
 canvas{display:block;width:100%;height:auto;touch-action:none}
 .help{margin:12px 2px 0;font-size:13px;line-height:1.7;color:#59677a}.win{color:#167347!important}
 @media (max-width: 600px) {
-  body {
-    padding: 10px 6px 20px;
-  }
-
-  .toolbar {
-    gap: 7px;
-  }
-
+  body { padding: 6px 4px 8px; }
+  h1 { font-size: 20px; margin-bottom: 2px; }
+  .sub { font-size: 11px; margin-bottom: 6px; }
+  .toolbar { gap: 5px; margin-bottom: 6px; }
   .toolbar button {
     flex: 1 1 40%;
-    min-height: 48px;
-    font-size: 16px;
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 13px;
   }
-
-  #status {
-    width: 100%;
-    margin: 5px 0;
-    text-align: center;
-    font-size: 15px;
-  }
-
-  .stage {
-    padding: 4px;
-  }
-
-  .help {
-    font-size: 12px;
-  }
+  #status { width: 100%; margin: 0; text-align: center; font-size: 12px; }
+  .stage { padding: 2px; border-radius: 10px; }
+  .help { display: none; }
 }
 </style>
 </head>
@@ -100,66 +85,54 @@ function rotate(cells){return normalize(cells.map(([x,y])=>[-y,x]));}
 function flip(cells){return normalize(cells.map(([x,y])=>[-x,y]));}
 function dims(cells){const b=bounds(cells);return{w:b.maxX-b.minX+1,h:b.maxY-b.minY+1};}
 function resize() {
-  const width = Math.min(
-    canvas.parentElement.clientWidth - 16,
-    860
-  );
-
-  layoutWidth = Math.max(380, width);
-
-  // スマホかPCか判定
-  const isMobile = layoutWidth <= 600;
-
-  // ピースの並べ方
+  const width = Math.max(260, Math.min(canvas.parentElement.clientWidth - 8, 860));
+  layoutWidth = width;
+  const isMobile = window.matchMedia('(max-width: 600px)').matches;
   trayCols = isMobile ? 3 : 6;
+  dpr = window.devicePixelRatio || 1;
 
-  // マス目の大きさ
-  cell = Math.min(
-    54,
-    (layoutWidth - 34) / COLS,
-    isMobile
-      ? 100
-      :(window.innerHeight-260)/7.2
-  );
-
-  // ピースの大きさ
   if (isMobile) {
-    mini = Math.min(
-      20,
-      cell * 0.58,
-      (layoutWidth - 24 - trayCols * 12) / (trayCols * 5)
-    );
+    // スマホ：盤面と12個のピースを画面内に収める
+    boardY = 30;
+    const canvasTop = canvas.getBoundingClientRect().top;
+    const availableHeight = Math.max(320, window.innerHeight - canvasTop - 8);
+    cell = Math.min(34, (layoutWidth - 20) / COLS);
+    trayY = boardY + ROWS * cell + 24;
+    const trayRows = Math.ceil(pieces.length / trayCols);
+    const rowGapAndLabel = 18;
+    const verticalMini = (availableHeight - trayY - trayRows * rowGapAndLabel - 10) / (trayRows * 5);
+    const horizontalMini = (layoutWidth - 24 - (trayCols - 1) * 12) / (trayCols * 5);
+    mini = Math.max(7, Math.min(18, cell * 0.58, horizontalMini, verticalMini));
+    trayGap = (layoutWidth - 24) / trayCols - (5 * mini + 12);
+    layoutHeight = trayY + trayRows * (5 * mini + rowGapAndLabel) + 10;
   } else {
+    // PC：従来の大きさを維持
+    cell = Math.min(54, (layoutWidth - 34) / COLS);
     mini = Math.max(12, Math.min(25, cell * 0.48));
+    boardY = 48;
+    trayY = boardY + ROWS * cell + 72;
+    const trayRows = Math.ceil(pieces.length / trayCols);
+    trayGap = (layoutWidth - 24 - trayCols * (5 * mini + 12)) / trayCols;
+    layoutHeight = trayY + trayRows * (5 * mini + 28) + 28;
   }
 
   boardX = (layoutWidth - COLS * cell) / 2;
-  boardY = 48;
-
-  trayY = boardY + ROWS * cell + 72;
-
-  trayGap =
-    (layoutWidth - 24 - trayCols * (5 * mini + 12))
-    / trayCols;
-
-  const trayRows = Math.ceil(pieces.length / trayCols);
-
-  layoutHeight =
-    trayY + trayRows * (5 * mini + 28) + 28;
-
-  dpr = window.devicePixelRatio || 1;
-
   canvas.width = Math.round(layoutWidth * dpr);
   canvas.height = Math.round(layoutHeight * dpr);
-
   canvas.style.width = layoutWidth + 'px';
   canvas.style.height = layoutHeight + 'px';
-
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
   draw();
 }
-function trayOrigin(p){const col=p.id%6,row=Math.floor(p.id/6);return{x:12+col*(5*mini+12+trayGap),y:trayY+row*(5*mini+28)};}
+function trayOrigin(p) {
+  const col = p.id % trayCols;
+  const row = Math.floor(p.id / trayCols);
+  const rowStep = window.matchMedia('(max-width: 600px)').matches ? 5 * mini + 18 : 5 * mini + 28;
+  return {
+    x: 12 + col * (5 * mini + 12 + trayGap),
+    y: trayY + row * rowStep
+  };
+}
 function getPieceAt(px,py){
  for(let i=pieces.length-1;i>=0;i--){const p=pieces[i];
   if(p.placed){const hit=p.cells.find(([x,y])=>px>=boardX+(p.x+x)*cell&&px<=boardX+(p.x+x+1)*cell&&py>=boardY+(p.y+y)*cell&&py<=boardY+(p.y+y+1)*cell);if(hit)return{piece:p,anchor:hit,fromBoard:true};}
