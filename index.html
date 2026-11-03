@@ -139,7 +139,7 @@ function trayOrigin(p) {
 function getPieceAt(px,py){
  for(let i=pieces.length-1;i>=0;i--){const p=pieces[i];
   if(p.placed){const hit=p.cells.find(([x,y])=>px>=boardX+(p.x+x)*cell&&px<=boardX+(p.x+x+1)*cell&&py>=boardY+(p.y+y)*cell&&py<=boardY+(p.y+y+1)*cell);if(hit)return{piece:p,anchor:hit,fromBoard:true};}
-  else{const o=trayOrigin(p);const hit=p.cells.find(([x,y])=>px>=o.x+x*mini&&px<=o.x+(x+1)*mini&&py>=o.y+y*mini&&py<=o.y+(y+1)*mini);if(hit)return{piece:p,anchor:hit,fromBoard:false};}
+  else{const o=trayOrigin(p),padding=8;const hit=p.cells.find(([x,y])=>px>=o.x+x*mini-padding&&px<=o.x+(x+1)*mini+8&&py>=o.y+y*mini-8&&py<=o.y+(y+1)*mini+8);if(hit)return{piece:p,anchor:hit,fromBoard:false};}
  }return null;
 }
 function drawPiece(cells,x,y,size,color,alpha=1){
