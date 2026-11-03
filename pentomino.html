@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ペントミノ・パズル</title>
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}
+body{margin:0;padding:18px 12px 28px;background:#f4f6fa;color:#202938;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
+main{width:min(100%,900px);margin:0 auto}h1{margin:0 0 5px;font-size:clamp(22px,4vw,30px)}
+.sub{margin:0 0 14px;color:#586579;font-size:14px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
+button{appearance:none;border:1px solid #c7cfdb;border-radius:10px;background:white;color:#243247;padding:10px 14px;font-size:14px;font-weight:650;cursor:pointer;box-shadow:0 1px 2px #17203312}
+button:active{transform:translateY(1px)}button.primary{background:#2459a6;border-color:#2459a6;color:white}
+button:disabled{opacity:.4;cursor:not-allowed}#status{margin-left:auto;font-size:14px;font-weight:650;color:#34445b}
+.stage{background:white;border:1px solid #dce2eb;border-radius:16px;padding:8px;box-shadow:0 4px 18px #2432470c;overflow:hidden}
+canvas{display:block;width:100%;height:auto;touch-action:none}
+.help{margin:12px 2px 0;font-size:13px;line-height:1.7;color:#59677a}.win{color:#167347!important}
+@media (max-width: 600px) {
+  body {
+    padding: 10px 6px 20px;
+  }
+
+  .toolbar {
+    gap: 7px;
+  }
+
+  .toolbar button {
+    flex: 1 1 40%;
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  #status {
+    width: 100%;
+    margin: 5px 0;
+    text-align: center;
+    font-size: 15px;
+  }
+
+  .stage {
+    padding: 4px;
+  }
+
+  .help {
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>ペントミノ・パズル</h1>
+<p class="sub">12個のピースを使って、6行×10列の盤面をすべて埋めよう！</p>
+<div class="toolbar">
+<button id="rotate">↻ 回転</button>
+<button id="flip">⇋ 反転</button>
+<button id="undo" disabled>↶ ひとつ戻る</button>
+<button id="reset">最初から</button>
+<span id="status">配置済み：0 / 12</span>
+</div>
+<div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas></div>
+<p class="help">ピースをタップして選択、ドラッグして盤面へ。選択中は「回転」「反転」で向きを変えられます。<br>
+盤面上のピースもドラッグして戻したり、置き直したりできます。重なったり盤面からはみ出したりする場所には置けません。</p>
+</main>
+<script>
+(() => {
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const statusEl=document.getElementById('status');
+const rotateBtn=document.getElementById('rotate'),flipBtn=document.getElementById('flip');
+const resetBtn=document.getElementById('reset'),undoBtn=document.getElementById('undo');
+const definitions=[
+['F',[[1,0],[2,0],[0,1],[1,1],[1,2]],'#e76f51'],
+['I',[[0,0],[0,1],[0,2],[0,3],[0,4]],'#457b9d'],
+['L',[[0,0],[0,1],[0,2],[0,3],[1,3]],'#2a9d8f'],
+['P',[[0,0],[1,0],[0,1],[1,1],[0,2]],'#e9a23b'],
+['N',[[0,0],[0,1],[1,1],[1,2],[1,3]],'#8b6fb1'],
+['T',[[0,0],[1,0],[2,0],[1,1],[1,2]],'#d65a83'],
+['U',[[0,0],[2,0],[0,1],[1,1],[2,1]],'#5b9b55'],
+['V',[[0,0],[0,1],[0,2],[1,2],[2,2]],'#d17b36'],
+['W',[[0,0],[0,1],[1,1],[1,2],[2,2]],'#4e91a8'],
+['X',[[1,0],[0,1],[1,1],[2,1],[1,2]],'#7b78bd'],
+['Y',[[0,0],[0,1],[0,2],[0,3],[1,1]],'#bc6c8f'],
+['Z',[[0,0],[1,0],[1,1],[1,2],[2,2]],'#6c8f70']
+];
+const pieces=definitions.map(([name,cells,color],id)=>({id,name,cells:cells.map(([x,y])=>[x,y]),color,placed:false,x:0,y:0}));
+const COLS=10,ROWS=6;
+let boardX=0,boardY=0,cell=40,mini=22,trayY=0,trayCols=6,trayGap=0;
+let selected=null,drag=null,layoutWidth=700,layoutHeight=760,dpr=1;
+let history=[];
+function saveState(){return{pieces:pieces.map(p=>({cells:p.cells.map(([x,y])=>[x,y]),placed:p.placed,x:p.x,y:p.y})),selectedId:selected?selected.id:null};}
+function restoreState(state){
+ state.pieces.forEach((s,i)=>{pieces[i].cells=s.cells.map(([x,y])=>[x,y]);pieces[i].placed=s.placed;pieces[i].x=s.x;pieces[i].y=s.y;});
+ selected=state.selectedId===null?null:pieces[state.selectedId];
+}
+function undo(){if(!history.length)return;restoreState(history.pop());drag=null;draw();}
+function bounds(cells){const xs=cells.map(p=>p[0]),ys=cells.map(p=>p[1]);return{minX:Math.min(...xs),minY:Math.min(...ys),maxX:Math.max(...xs),maxY:Math.max(...ys)};}
+function normalize(cells){const b=bounds(cells);return cells.map(([x,y])=>[x-b.minX,y-b.minY]);}
+function rotate(cells){return normalize(cells.map(([x,y])=>[-y,x]));}
+function flip(cells){return normalize(cells.map(([x,y])=>[-x,y]));}
+function dims(cells){const b=bounds(cells);return{w:b.maxX-b.minX+1,h:b.maxY-b.minY+1};}
+function resize() {
+  const width = Math.min(
+    canvas.parentElement.clientWidth - 16,
+    860
+  );
+
+  layoutWidth = Math.max(380, width);
+
+  // スマホかPCか判定
+  const isMobile = layoutWidth <= 600;
+
+  // ピースの並べ方
+  trayCols = isMobile ? 3 : 6;
+
+  // マス目の大きさ
+  cell = Math.min(
+    54,
+    (layoutWidth - 34) / COLS,
+    isMobile
+      ? 100
+      :(window.innerHeight-260)/7.2
+  );
+
+  // ピースの大きさ
+  if (isMobile) {
+    mini = Math.min(
+      20,
+      cell * 0.58,
+      (layoutWidth - 24 - trayCols * 12) / (trayCols * 5)
+    );
+  } else {
+    mini = Math.max(12, Math.min(25, cell * 0.48));
+  }
+
+  boardX = (layoutWidth - COLS * cell) / 2;
+  boardY = 48;
+
+  trayY = boardY + ROWS * cell + 72;
+
+  trayGap =
+    (layoutWidth - 24 - trayCols * (5 * mini + 12))
+    / trayCols;
+
+  const trayRows = Math.ceil(pieces.length / trayCols);
+
+  layoutHeight =
+    trayY + trayRows * (5 * mini + 28) + 28;
+
+  dpr = window.devicePixelRatio || 1;
+
+  canvas.width = Math.round(layoutWidth * dpr);
+  canvas.height = Math.round(layoutHeight * dpr);
+
+  canvas.style.width = layoutWidth + 'px';
+  canvas.style.height = layoutHeight + 'px';
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  draw();
+}
+function trayOrigin(p){const col=p.id%6,row=Math.floor(p.id/6);return{x:12+col*(5*mini+12+trayGap),y:trayY+row*(5*mini+28)};}
+function getPieceAt(px,py){
+ for(let i=pieces.length-1;i>=0;i--){const p=pieces[i];
+  if(p.placed){const hit=p.cells.find(([x,y])=>px>=boardX+(p.x+x)*cell&&px<=boardX+(p.x+x+1)*cell&&py>=boardY+(p.y+y)*cell&&py<=boardY+(p.y+y+1)*cell);if(hit)return{piece:p,anchor:hit,fromBoard:true};}
+  else{const o=trayOrigin(p);const hit=p.cells.find(([x,y])=>px>=o.x+x*mini&&px<=o.x+(x+1)*mini&&py>=o.y+y*mini&&py<=o.y+(y+1)*mini);if(hit)return{piece:p,anchor:hit,fromBoard:false};}
+ }return null;
+}
+function drawPiece(cells,x,y,size,color,alpha=1){
+ ctx.save();ctx.globalAlpha=alpha;
+ for(const[cx,cy]of cells){const px=x+cx*size,py=y+cy*size;ctx.fillStyle=color;ctx.fillRect(px+1,py+1,size-2,size-2);ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(1,size*.045);ctx.strokeRect(px+1,py+1,size-2,size-2);ctx.strokeStyle='#26364a22';ctx.lineWidth=1;ctx.strokeRect(px+1,py+1,size-2,size-2);}
+ ctx.restore();
+}
+function draw(){
+ ctx.clearRect(0,0,layoutWidth,layoutHeight);ctx.fillStyle='#536176';ctx.font='600 14px system-ui';ctx.fillText('盤面',boardX,26);
+ ctx.fillStyle='#f8fafc';ctx.fillRect(boardX,boardY,COLS*cell,ROWS*cell);ctx.strokeStyle='#9aa8ba';ctx.lineWidth=1;
+ for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(boardX+x*cell,boardY);ctx.lineTo(boardX+x*cell,boardY+ROWS*cell);ctx.stroke();}
+ for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(boardX,boardY+y*cell);ctx.lineTo(boardX+COLS*cell,boardY+y*cell);ctx.stroke();}
+ for(const p of pieces)if(p.placed&&!(drag&&drag.piece===p))drawPiece(p.cells,boardX+p.x*cell,boardY+p.y*cell,cell,p.color);
+ ctx.fillStyle='#536176';ctx.fillText('ピース（全12種類）',12,trayY-18);
+ for(const p of pieces)if(!p.placed&&!(drag&&drag.piece===p)){
+  const o=trayOrigin(p),d=dims(p.cells);drawPiece(p.cells,o.x,o.y,mini,p.color);
+  ctx.fillStyle='#4d5b70';ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.fillText(p.name,o.x+d.w*mini/2,o.y+d.h*mini+14);ctx.textAlign='left';
+  if(selected===p){ctx.strokeStyle='#2459a6';ctx.lineWidth=2.5;ctx.strokeRect(o.x-3,o.y-3,d.w*mini+6,d.h*mini+6);}
+ }
+ if(drag){const p=drag.piece,gx=drag.pointerX-drag.grabX*cell,gy=drag.pointerY-drag.grabY*cell;drawPiece(p.cells,gx,gy,cell,p.color,.86);}
+ updateStatus();
+}
+function updateStatus(){
+ const count=pieces.filter(p=>p.placed).length;statusEl.textContent=`配置済み：${count} / 12`;
+ if(count===12){statusEl.textContent='🎉 クリア！おめでとう！';statusEl.classList.add('win');}else statusEl.classList.remove('win');
+ rotateBtn.disabled=!selected;flipBtn.disabled=!selected;undoBtn.disabled=history.length===0;
+}
+function point(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*layoutWidth/r.width,y:(e.clientY-r.top)*layoutHeight/r.height};}
+canvas.addEventListener('pointerdown',e=>{
+ const pt=point(e),hit=getPieceAt(pt.x,pt.y);if(!hit){selected=null;draw();return;}
+ const before=saveState(),p=hit.piece;selected=p;if(hit.fromBoard)p.placed=false;
+ drag={piece:p,grabX:hit.anchor[0],grabY:hit.anchor[1],pointerX:pt.x,pointerY:pt.y,before};
+ canvas.setPointerCapture(e.pointerId);draw();
+});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;const pt=point(e);drag.pointerX=pt.x;drag.pointerY=pt.y;draw();});
+function finishDrag(e){
+ if(!drag)return;const pt=point(e),d=drag,p=d.piece;
+ const x=Math.round((pt.x-boardX)/cell-d.grabX),y=Math.round((pt.y-boardY)/cell-d.grabY);
+ const valid=p.cells.every(([cx,cy])=>{const bx=x+cx,by=y+cy;if(bx<0||bx>=COLS||by<0||by>=ROWS)return false;return!pieces.some(q=>q!==p&&q.placed&&q.cells.some(([qx,qy])=>q.x+qx===bx&&q.y+qy===by));});
+ const inside=pt.x>=boardX-5&&pt.x<=boardX+COLS*cell+5&&pt.y>=boardY-5&&pt.y<=boardY+ROWS*cell+5;
+ if(valid&&inside){history.push(d.before);p.x=x;p.y=y;p.placed=true;}else {restoreState(d.before);selected=p;}
+ drag=null;draw();
+}
+canvas.addEventListener('pointerup',finishDrag);
+canvas.addEventListener('pointercancel',()=>{if(drag){restoreState(drag.before);drag=null;draw();}});
+rotateBtn.addEventListener('click',()=>{if(!selected)return;history.push(saveState());if(selected.placed)selected.placed=false;selected.cells=rotate(selected.cells);draw();});
+flipBtn.addEventListener('click',()=>{if(!selected)return;history.push(saveState());if(selected.placed)selected.placed=false;selected.cells=flip(selected.cells);draw();});
+resetBtn.addEventListener('click',()=>{history.push(saveState());for(const p of pieces){p.cells=definitions[p.id][1].map(([x,y])=>[x,y]);p.placed=false;p.x=0;p.y=0;}selected=null;drag=null;draw();});
+undoBtn.addEventListener('click',undo);
+window.addEventListener('resize',resize);resize();
+})();
+</script>
+</body>
+</html>
