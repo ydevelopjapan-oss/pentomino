@@ -127,7 +127,10 @@ function resize() {
 function trayOrigin(p) {
   const col = p.id % trayCols;
   const row = Math.floor(p.id / trayCols);
-  const rowStep = window.matchMedia('(max-width: 600px)').matches ? 5 * mini + 18 : 5 * mini + 28;
+  const isMobile=window.matchMedia('(max-width: 600px)').matches;
+  const rowStep = isMobile?5*mini+18:5*mini+28;
+  const totalWidth=trayCols*5*mini+(trayCols-1)*12;
+  const startX=(layoutWidth-totalWidth)/2+8;
   return {
     x: 12 + col * (5 * mini + 12 + trayGap),
     y: trayY + row * rowStep
