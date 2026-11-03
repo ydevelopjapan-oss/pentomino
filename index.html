@@ -14,7 +14,7 @@ button{appearance:none;border:1px solid #c7cfdb;border-radius:10px;background:wh
 button:active{transform:translateY(1px)}button.primary{background:#2459a6;border-color:#2459a6;color:white}
 button:disabled{opacity:.4;cursor:not-allowed}#status{margin-left:auto;font-size:14px;font-weight:650;color:#34445b}
 .stage{background:white;border:1px solid #dce2eb;border-radius:16px;padding:8px;box-shadow:0 4px 18px #2432470c;overflow:hidden}
-canvas{display:block;width:100%;height:auto;touch-action:none}
+canvas{display:block;width:100%;height:auto;touch-action:none;user-select: none;-webkit-user-select: none; -webkit-touch-callout: none;}
 .help{margin:12px 2px 0;font-size:13px;line-height:1.7;color:#59677a}.win{color:#167347!important}
 @media (max-width: 600px) {
   body { padding: 6px 4px 8px; }
@@ -168,6 +168,7 @@ function updateStatus(){
 }
 function point(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*layoutWidth/r.width,y:(e.clientY-r.top)*layoutHeight/r.height};}
 canvas.addEventListener('pointerdown',e=>{
+ e.preventDefault();
  const pt=point(e),hit=getPieceAt(pt.x,pt.y);if(!hit){selected=null;draw();return;}
  const before=saveState(),p=hit.piece;selected=p;if(hit.fromBoard)p.placed=false;
  drag={piece:p,grabX:hit.anchor[0],grabY:hit.anchor[1],pointerX:pt.x,pointerY:pt.y,before};
