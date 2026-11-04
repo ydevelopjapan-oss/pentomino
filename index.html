@@ -5,30 +5,155 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>ペントミノ・パズル</title>
 <style>
-:root{color-scheme:light}*{box-sizing:border-box}
-body{margin:0;padding:18px 12px 28px;background:#f4f6fa;color:#202938;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
-main{width:min(100%,900px);margin:0 auto}h1{margin:0 0 5px;font-size:clamp(22px,4vw,30px)}
-.sub{margin:0 0 14px;color:#586579;font-size:14px}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
-button{appearance:none;border:1px solid #c7cfdb;border-radius:10px;background:white;color:#243247;padding:10px 14px;font-size:14px;font-weight:650;cursor:pointer;box-shadow:0 1px 2px #17203312}
-button:active{transform:translateY(1px)}button.primary{background:#2459a6;border-color:#2459a6;color:white}
-button:disabled{opacity:.4;cursor:not-allowed}#status{margin-left:auto;font-size:14px;font-weight:650;color:#34445b}
-.stage{background:white;border:1px solid #dce2eb;border-radius:16px;padding:8px;box-shadow:0 4px 18px #2432470c;overflow:hidden}
-canvas{display:block;width:100%;height:auto;touch-action:none;user-select: none;-webkit-user-select: none; -webkit-touch-callout: none;}
-.help{margin:12px 2px 0;font-size:13px;line-height:1.7;color:#59677a}.win{color:#167347!important}
+:root {
+  color-scheme: light;
+  --ink: #394657;
+  --muted: #7d8996;
+  --paper: #f3f5f2;
+  --card: #ffffff;
+  --line: #dfe6e1;
+  --mint: #78aa9d;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 18px 12px 28px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  width: min(100%, 900px);
+  margin: 0 auto;
+}
+
+h1 {
+  margin: 0 0 5px;
+  font-size: clamp(22px, 4vw, 30px);
+}
+
+.sub {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+button {
+  border: 1px solid #d8e0db;
+  border-radius: 14px;
+  background: white;
+  color: #465565;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  box-shadow: 0 2px 5px #34425210;
+}
+
+button.primary {
+  background: #78aa9d;
+  color: white;
+}
+
+button:disabled {
+  opacity: .4;
+}
+
+#progress {
+  margin-left: auto;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.progress-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #78858f;
+  font-weight: 650;
+}
+
+#progress-count {
+  color: #568f82;
+  font-size: 16px;
+}
+
+.progress-track {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 3px;
+}
+
+.progress-segment {
+  height: 7px;
+  border-radius: 20px;
+  background: #e4eae5;
+}
+
+.progress-segment.filled {
+  background: #83b6a8;
+}
+
+.stage {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 8px;
+  box-shadow: 0 5px 20px #3442520b;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.help {
+  margin: 12px 2px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #7a8791;
+}
+
+.win {
+  color: #568f82 !important;
+}
+
 @media (max-width: 600px) {
-  body { padding: 6px 4px 8px; }
-  h1 { font-size: 20px; margin-bottom: 2px; }
-  .sub { font-size: 11px; margin-bottom: 6px; }
-  .toolbar { gap: 5px; margin-bottom: 6px; }
+  body { padding: 8px 4px 10px; }
+  h1 { font-size: 21px; }
+  .sub { font-size: 11px; margin-bottom: 8px; }
+  .toolbar { gap: 6px; }
   .toolbar button {
     flex: 1 1 40%;
-    min-height: 36px;
-    padding: 6px 8px;
+    min-height: 38px;
+    padding: 7px;
     font-size: 13px;
   }
-  #status { width: 100%; margin: 0; text-align: center; font-size: 12px; }
-  .stage { padding: 2px; border-radius: 10px; }
+  #progress {
+    width: 100%;
+    min-width: 0;
+    margin: 2px 4px 0;
+  }
+  .stage { padding: 3px; }
   .help { display: none; }
 }
 </style>
@@ -42,7 +167,6 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select: none;
 <button id="flip">⇋ 反転</button>
 <button id="undo" disabled>↶ ひとつ戻る</button>
 <button id="reset">最初から</button>
-<span id="status">配置済み：0 / 12</span>
 </div>
 <div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas></div>
 <p class="help">ピースをタップして選択、ドラッグして盤面へ。選択中は「回転」「反転」で向きを変えられます。<br>
@@ -51,7 +175,6 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select: none;
 <script>
 (() => {
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
-const statusEl=document.getElementById('status');
 const rotateBtn=document.getElementById('rotate'),flipBtn=document.getElementById('flip');
 const resetBtn=document.getElementById('reset'),undoBtn=document.getElementById('undo');
 const definitions=[
@@ -132,7 +255,7 @@ function trayOrigin(p) {
   const totalWidth=trayCols*5*mini+(trayCols-1)*12;
   const startX=(layoutWidth-totalWidth)/2+8;
   return {
-    x: 60 + col * (5 * mini + 12 + trayGap),
+    x: startX + col * (5 * mini + 12 + trayGap),
     y: trayY + row * rowStep
   };
 }
@@ -142,10 +265,46 @@ function getPieceAt(px,py){
   else{const o=trayOrigin(p),padding=8;const hit=p.cells.find(([x,y])=>px>=o.x+x*mini-padding&&px<=o.x+(x+1)*mini+8&&py>=o.y+y*mini-8&&py<=o.y+(y+1)*mini+8);if(hit)return{piece:p,anchor:hit,fromBoard:false};}
  }return null;
 }
-function drawPiece(cells,x,y,size,color,alpha=1){
- ctx.save();ctx.globalAlpha=alpha;
- for(const[cx,cy]of cells){const px=x+cx*size,py=y+cy*size;ctx.fillStyle=color;ctx.fillRect(px+1,py+1,size-2,size-2);ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(1,size*.045);ctx.strokeRect(px+1,py+1,size-2,size-2);ctx.strokeStyle='#26364a22';ctx.lineWidth=1;ctx.strokeRect(px+1,py+1,size-2,size-2);}
- ctx.restore();
+function shadeColor(hex, amount) {
+  const value = parseInt(hex.slice(1), 16);
+
+  const r = Math.max(0, Math.min(255, (value >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((value >> 8) & 255) + amount));
+  const b = Math.max(0, Math.min(255, (value & 255) + amount));
+
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawPiece(cells, x, y, size, color, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  for (const [cx, cy] of cells) {
+    const px = x + cx * size;
+    const py = y + cy * size;
+    const inset = Math.max(1, size * 0.045);
+    const w = size - inset * 2;
+    const h = size - inset * 2;
+
+    // 下側の影
+    ctx.fillStyle = shadeColor(color, -25);
+    ctx.fillRect(px + inset, py + inset + 2, w, h);
+
+    // 本体
+    ctx.fillStyle = color;
+    ctx.fillRect(px + inset, py + inset, w, h);
+
+    // 上側の光沢
+    ctx.fillStyle = shadeColor(color, 25);
+    ctx.fillRect(px + inset, py + inset, w, Math.max(1, size * 0.12));
+
+    // 縁取り
+    ctx.strokeStyle = '#ffffffcc';
+    ctx.lineWidth = Math.max(1, size * 0.045);
+    ctx.strokeRect(px + inset, py + inset, w, h);
+  }
+
+  ctx.restore();
 }
 function draw(){
  ctx.clearRect(0,0,layoutWidth,layoutHeight);ctx.fillStyle='#536176';ctx.font='600 14px system-ui';ctx.fillText('盤面',boardX,26);
@@ -153,11 +312,42 @@ function draw(){
  for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(boardX+x*cell,boardY);ctx.lineTo(boardX+x*cell,boardY+ROWS*cell);ctx.stroke();}
  for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(boardX,boardY+y*cell);ctx.lineTo(boardX+COLS*cell,boardY+y*cell);ctx.stroke();}
  for(const p of pieces)if(p.placed&&!(drag&&drag.piece===p))drawPiece(p.cells,boardX+p.x*cell,boardY+p.y*cell,cell,p.color);
- for(const p of pieces)if(!p.placed&&!(drag&&drag.piece===p)){
-  const o=trayOrigin(p),d=dims(p.cells);drawPiece(p.cells,o.x,o.y,mini,p.color);
-  ctx.fillStyle='#4d5b70';ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.fillText(p.name,o.x+d.w*mini/2,o.y+d.h*mini+14);ctx.textAlign='left';
-  if(selected===p){ctx.strokeStyle='#2459a6';ctx.lineWidth=2.5;ctx.strokeRect(o.x-3,o.y-3,d.w*mini+6,d.h*mini+6);}
- }
+ for (const p of pieces) {
+  if (p.placed || (drag && drag.piece === p)) continue;
+
+  const o = trayOrigin(p);
+  const d = dims(p.cells);
+
+  const cardW = 5 * mini + 12;
+  const cardH = 5 * mini + 28;
+
+  // カード背景
+  ctx.fillStyle = selected === p ? '#edf5f1' : '#fbfcfa';
+  ctx.strokeStyle = selected === p ? '#83b6a8' : '#e7ece8';
+  ctx.lineWidth = selected === p ? 2 : 1;
+
+  ctx.beginPath();
+  ctx.roundRect(o.x - 6, o.y - 6, cardW, cardH, 7);
+  ctx.fill();
+  ctx.stroke();
+
+  // ピースをカード内で中央寄せ
+  const pieceX = o.x + (5 * mini - d.w * mini) / 2;
+  const pieceY = o.y + (5 * mini - d.h * mini) / 2;
+
+  drawPiece(p.cells, pieceX, pieceY, mini, p.color);
+
+  // ピース名
+  ctx.fillStyle = '#657382';
+  ctx.font = '600 11px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(
+    p.name,
+    o.x + cardW / 2 - 6,
+    o.y + 5 * mini + 12
+  );
+  ctx.textAlign = 'left';
+}
  if(drag){const p=drag.piece,gx=drag.pointerX-drag.grabX*cell,gy=drag.pointerY-drag.grabY*cell;drawPiece(p.cells,gx,gy,cell,p.color,.86);}
  updateStatus();
 }
