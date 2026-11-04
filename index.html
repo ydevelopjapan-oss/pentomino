@@ -174,7 +174,15 @@ canvas.addEventListener('pointerdown',e=>{
  drag={piece:p,grabX:hit.anchor[0],grabY:hit.anchor[1],pointerX:pt.x,pointerY:pt.y,before};
  canvas.setPointerCapture(e.pointerId);draw();
 });
-canvas.addEventListener('pointermove',e=>{if(!drag)return;const pt=point(e);drag.pointerX=pt.x;drag.pointerY=pt.y;draw();});
+canvas.addEventListener('pointermove', e => {
+  if (!drag) return;
+  e.preventDefault();
+
+  const pt = point(e);
+  drag.pointerX = pt.x;
+  drag.pointerY = pt.y;
+  draw();
+}, { passive: false });
 function finishDrag(e){
  if(!drag)return;const pt=point(e),d=drag,p=d.piece;
  const x=Math.round((pt.x-boardX)/cell-d.grabX),y=Math.round((pt.y-boardY)/cell-d.grabY);
