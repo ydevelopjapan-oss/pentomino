@@ -123,49 +123,81 @@ function getPieceAt(px,py){
  }return null;
 }
 
+
 function drawPiece(cells, x, y, size, color, alpha = 1) {
   ctx.save();
   ctx.globalAlpha = alpha;
 
   const radius = size * 0.24;
-  const overlap = size * 0.10;
+  const overlap = size * 0.04;
 
-  // ピース全体に柔らかい影をつける
+  const has = (x, y) =>
+    cells.some(([cx, cy]) => cx === x && cy === y);
+
+  const minX = Math.min(...cells.map(c => c[0]));
+  const maxX = Math.max(...cells.map(c => c[0]));
+  const minY = Math.min(...cells.map(c => c[1]));
+  const maxY = Math.max(...cells.map(c => c[1]));
+
+  const gradient = ctx.createLinearGradient(
+    x, y + minY * size,
+    x, y + (maxY + 1) * size
+  );
+
+  gradient.addColorStop(0, lightenColor(color, 28));
+  gradient.addColorStop(0.45, color);
+  gradient.addColorStop(1, darkenColor(color, 18));
+
+  // 影
   ctx.shadowColor = 'rgba(70, 75, 85, 0.28)';
   ctx.shadowBlur = size * 0.22;
-  ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = size * 0.10;
 
-  // 各マスを少し重ねて、ひとつの形に見せる
   for (const [cx, cy] of cells) {
     const px = x + cx * size;
     const py = y + cy * size;
 
     const left = px - overlap;
     const top = py - overlap;
-    const width = size + overlap * 2;
-    const height = size + overlap * 2;
+    const s = size + overlap * 2;
 
-    const r = Math.min(radius, width / 2, height / 2);
+    // 隣接マスがある角は丸めない
+    const tl = !has(cx - 1, cy) && !has(cx, cy - 1) ? radius : 0;
+    const tr = !has(cx + 1, cy) && !has(cx, cy - 1) ? radius : 0;
+    const br = !has(cx + 1, cy) && !has(cx, cy + 1) ? radius : 0;
+    const bl = !has(cx - 1, cy) && !has(cx, cy + 1) ? radius : 0;
 
     ctx.beginPath();
-    ctx.roundRect(left, top, width, height, r);
-
-    // 上面のグラデーション
-    const gradient = ctx.createLinearGradient(
-      left, top, left, top + height
-    );
-
-    gradient.addColorStop(0, lightenColor(color, 28));
-    gradient.addColorStop(0.45, color);
-    gradient.addColorStop(1, darkenColor(color, 18));
+    ctx.roundRect(left, top, s, s, [tl, tr, br, bl]);
 
     ctx.fillStyle = gradient;
     ctx.fill();
   }
 
+  // 上方向が空いている外周部分だけに光沢をつける
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.38)';
+  ctx.lineWidth = Math.max(1, size * 0.035);
+  ctx.lineCap = 'round';
+
+  for (const [cx, cy] of cells) {
+    if (!has(cx, cy - 1)) {
+      const px = x + cx * size;
+      const py = y + cy * size;
+
+      ctx.beginPath();
+      ctx.moveTo(px + radius * 0.8, py + 2);
+      ctx.lineTo(px + size - radius * 0.8, py + 2);
+      ctx.stroke();
+    }
+  }
+
   ctx.restore();
 }
+
 
 // 色を明るくする
 function lightenColor(hex, amount) {
