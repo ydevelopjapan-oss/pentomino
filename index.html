@@ -122,31 +122,71 @@ function getPieceAt(px,py){
   else{const o=trayOrigin(p),padding=8;const hit=p.cells.find(([x,y])=>px>=o.x+x*mini-padding&&px<=o.x+(x+1)*mini+8&&py>=o.y+y*mini-8&&py<=o.y+(y+1)*mini+8);if(hit)return{piece:p,anchor:hit,fromBoard:false};}
  }return null;
 }
-function drawPiece(cells,x,y,size,color,alpha=1){
-  ctx.save();ctx.globalAlpha=alpha;
-  const path=new Path2D();
-  const set=new Set(cells.map(([cx,cy])=>cx+','+cy));
-  const radius=Math.max(2,Math.min(7,size*.13));
-  // Rounded squares plus short bridges make one continuous piece with no internal seams.
-  for(const [cx,cy] of cells)path.roundRect(x+cx*size,y+cy*size,size,size,radius);
-  for(const [cx,cy] of cells){
-    if(set.has((cx+1)+','+cy))path.rect(x+(cx+1)*size-radius,y+cy*size,size?radius*2:0,size);
-    if(set.has(cx+','+(cy+1)))path.rect(x+cx*size,y+(cy+1)*size-radius,size,radius*2);
+
+function drawPiece(cells, x, y, size, color, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  const radius = size * 0.24;
+  const overlap = size * 0.10;
+
+  // ピース全体に柔らかい影をつける
+  ctx.shadowColor = 'rgba(70, 75, 85, 0.28)';
+  ctx.shadowBlur = size * 0.22;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = size * 0.10;
+
+  // 各マスを少し重ねて、ひとつの形に見せる
+  for (const [cx, cy] of cells) {
+    const px = x + cx * size;
+    const py = y + cy * size;
+
+    const left = px - overlap;
+    const top = py - overlap;
+    const width = size + overlap * 2;
+    const height = size + overlap * 2;
+
+    const r = Math.min(radius, width / 2, height / 2);
+
+    ctx.beginPath();
+    ctx.roundRect(left, top, width, height, r);
+
+    // 上面のグラデーション
+    const gradient = ctx.createLinearGradient(
+      left, top, left, top + height
+    );
+
+    gradient.addColorStop(0, lightenColor(color, 28));
+    gradient.addColorStop(0.45, color);
+    gradient.addColorStop(1, darkenColor(color, 18));
+
+    ctx.fillStyle = gradient;
+    ctx.fill();
   }
-  ctx.save();ctx.shadowColor='rgba(80,75,65,.22)';ctx.shadowBlur=Math.max(3,size*.13);ctx.shadowOffsetY=Math.max(2,size*.07);
-  ctx.fillStyle=color;ctx.fill(path);ctx.restore();
-  // A shared texture is clipped to the complete pentomino silhouette, not tiled as separate outlined squares.
-  ctx.save();ctx.clip(path);
-  if(pieceTexture.complete&&pieceTexture.naturalWidth){
-    const b=bounds(cells),w=(b.maxX+1)*size-b.minX*size,h=(b.maxY+1)*size-b.minY*size;
-    ctx.globalAlpha=.18;ctx.drawImage(pieceTexture,x+b.minX*size,y+b.minY*size,w,h);
-    ctx.globalAlpha=.22;ctx.fillStyle=color;ctx.fillRect(x+b.minX*size,y+b.minY*size,w,h);
-  }
-  const b=bounds(cells),gx=x+b.minX*size,gy=y+b.minY*size,gw=(b.maxX-b.minX+1)*size,gh=(b.maxY-b.minY+1)*size;
-  const shine=ctx.createLinearGradient(gx,gy,gx,gy+gh);shine.addColorStop(0,'rgba(255,255,255,.24)');shine.addColorStop(.45,'rgba(255,255,255,.02)');shine.addColorStop(1,'rgba(70,65,55,.08)');
-  ctx.globalAlpha=1;ctx.fillStyle=shine;ctx.fill(path);ctx.restore();
+
   ctx.restore();
 }
+
+// 色を明るくする
+function lightenColor(hex, amount) {
+  return adjustColor(hex, amount);
+}
+
+// 色を暗くする
+function darkenColor(hex, amount) {
+  return adjustColor(hex, -amount);
+}
+
+function adjustColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((num >> 8) & 255) + amount));
+  const b = Math.max(0, Math.min(255, (num & 255) + amount));
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function draw(){
  ctx.clearRect(0,0,layoutWidth,layoutHeight);
  // Board: ivory board surface, fine grid and a narrow soft rim.
