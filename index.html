@@ -74,13 +74,13 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-
 <body>
 <main>
 <div class="header"><img src="assets/logo.PNG" alt="Pentomino" class="logo"></div>
+<div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas></div>
 <div class="toolbar">
 <button id="rotate" aria-label="回転" title="回転"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5"/><path d="M19 12a7.5 7.5 0 1 1-2.2-5.3L20 9"/></svg></button>
 <button id="flip" aria-label="反転" title="反転"><svg viewBox="0 0 24 24"><path d="M4 7h15l-3-3"/><path d="m19 7-3 3"/><path d="M20 17H5l3 3"/><path d="m5 17 3-3"/></svg></button>
 <button id="undo" disabled aria-label="ひとつ戻る" title="ひとつ戻る"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-2"/></svg></button>
 <button id="reset" class="reset" aria-label="最初から" title="最初から"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg></button>
 </div>
-<div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas></div>
 <p class="help">ピースをタップして選択、ドラッグして盤面へ。選択中は「回転」「反転」で向きを変えられます。<br>
 盤面上のピースもドラッグして戻したり、置き直したりできます。重なったり盤面からはみ出したりする場所には置けません。</p>
 </main>
