@@ -5,43 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>ペントミノ・パズル</title>
 <style>
-:root{color-scheme:light}*{box-sizing:border-box}
-body{margin:0;padding:18px 12px 28px;background:#f4f6fa;color:#202938;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
-main{width:min(100%,900px);margin:0 auto}h1{margin:0 0 5px;font-size:clamp(22px,4vw,30px)}
-.sub{margin:0 0 14px;color:#586579;font-size:14px}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
-button{appearance:none;border:1px solid #c7cfdb;border-radius:10px;background:white;color:#243247;padding:10px 14px;font-size:14px;font-weight:650;cursor:pointer;box-shadow:0 1px 2px #17203312}
-button:active{transform:translateY(1px)}button.primary{background:#2459a6;border-color:#2459a6;color:white}
-button:disabled{opacity:.4;cursor:not-allowed}#status{margin-left:auto;font-size:14px;font-weight:650;color:#34445b}
-.stage{background:white;border:1px solid #dce2eb;border-radius:16px;padding:8px;box-shadow:0 4px 18px #2432470c;overflow:hidden}
-canvas{display:block;width:100%;height:auto;touch-action:none;user-select: none;-webkit-user-select: none; -webkit-touch-callout: none;}
-.help{margin:12px 2px 0;font-size:13px;line-height:1.7;color:#59677a}.win{color:#167347!important}
-@media (max-width: 600px) {
-  body { padding: 6px 4px 8px; }
-  h1 { font-size: 20px; margin-bottom: 2px; }
-  .sub { font-size: 11px; margin-bottom: 6px; }
-  .toolbar { gap: 5px; margin-bottom: 6px; }
-  .toolbar button {
-    flex: 1 1 40%;
-    min-height: 36px;
-    padding: 6px 8px;
-    font-size: 13px;
-  }
-  #status { width: 100%; margin: 0; text-align: center; font-size: 12px; }
-  .stage { padding: 2px; border-radius: 10px; }
-  .help { display: none; }
+:root{color-scheme:light;--ink:#59616a;--ivory:#f7f4ec;--line:#d8d8d4;--rim:#d9d5ca}
+*{box-sizing:border-box}
+body{margin:0;padding:14px 12px 28px;background:#f5f3ee;color:#555b62;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
+main{width:min(100%,900px);margin:0 auto}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 12px}
+h1{margin:0;font-size:clamp(19px,3.8vw,27px);font-weight:700;letter-spacing:.02em;color:#62666b}
+.sub{margin:3px 2px 12px;color:#858780;font-size:13px}
+.toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 12px}
+button{appearance:none;border:1px solid #e0ddd5;border-radius:15px;background:linear-gradient(145deg,#fffefa,#eeeae1);color:#777a7c;min-width:54px;min-height:48px;padding:8px 12px;font-size:13px;font-weight:650;cursor:pointer;box-shadow:0 3px 6px #544b381c,inset 0 1px 1px #fff;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button svg{width:23px;height:23px;display:block;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+button:active{transform:translateY(1px);box-shadow:0 1px 3px #544b3820,inset 0 1px 2px #d8d2c6}
+button:disabled{opacity:.38;cursor:not-allowed;transform:none}
+button.reset{margin-left:auto;min-width:48px}
+#status{margin-left:auto;font-size:13px;font-weight:650;color:#777a7c;white-space:nowrap}
+.stage{background:linear-gradient(145deg,#fffefa,#f0ede5);border:1px solid #e2ded5;border-radius:19px;padding:8px;box-shadow:0 5px 16px #554b3812;overflow:hidden}
+canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.help{margin:12px 2px 0;font-size:13px;line-height:1.7;color:#858780}.win{color:#4c9878!important}
+@media(max-width:600px){
+ body{padding:8px 6px 16px}
+ .header{margin:0 2px 5px;align-items:flex-start}
+ h1{font-size:18px}
+ .sub{font-size:11px;margin:0 2px 8px}
+ .toolbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0 0 8px}
+ .toolbar button{min-width:0;width:100%;min-height:43px;border-radius:13px;padding:7px}
+ .toolbar button svg{width:22px;height:22px}
+ button.reset{margin-left:0}
+ #status{grid-column:1/-1;margin:0;text-align:center;font-size:12px}
+ .stage{padding:4px;border-radius:14px}
+ .help{display:none}
 }
 </style>
 </head>
 <body>
 <main>
-<h1>ペントミノ・パズル</h1>
+<div class="header"><h1>ペントミノ・パズル</h1></div>
 <p class="sub">12個のピースを使って、6行×10列の盤面をすべて埋めよう！</p>
 <div class="toolbar">
-<button id="rotate">↻ 回転</button>
-<button id="flip">⇋ 反転</button>
-<button id="undo" disabled>↶ ひとつ戻る</button>
-<button id="reset">最初から</button>
+<button id="rotate" aria-label="回転" title="回転"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5"/><path d="M19 12a7.5 7.5 0 1 1-2.2-5.3L20 9"/></svg></button>
+<button id="flip" aria-label="反転" title="反転"><svg viewBox="0 0 24 24"><path d="M4 7h15l-3-3"/><path d="m19 7-3 3"/><path d="M20 17H5l3 3"/><path d="m5 17 3-3"/></svg></button>
+<button id="undo" disabled aria-label="ひとつ戻る" title="ひとつ戻る"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-2"/></svg></button>
+<button id="reset" class="reset" aria-label="最初から" title="最初から"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg></button>
 <span id="status">配置済み：0 / 12</span>
 </div>
 <div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas></div>
@@ -51,22 +55,25 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select: none;
 <script>
 (() => {
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const pieceTexture=new Image(),boardTexture=new Image();
+pieceTexture.src='assets/piece-texture.png';boardTexture.src='assets/board-texture.png';
+let assetsReady=0;[pieceTexture,boardTexture].forEach(img=>img.onload=()=>{assetsReady++;draw();});
 const statusEl=document.getElementById('status');
 const rotateBtn=document.getElementById('rotate'),flipBtn=document.getElementById('flip');
 const resetBtn=document.getElementById('reset'),undoBtn=document.getElementById('undo');
 const definitions=[
-['F',[[1,0],[2,0],[0,1],[1,1],[1,2]],'#e76f51'],
-['I',[[0,0],[0,1],[0,2],[0,3],[0,4]],'#457b9d'],
-['L',[[0,0],[0,1],[0,2],[0,3],[1,3]],'#2a9d8f'],
-['P',[[0,0],[1,0],[0,1],[1,1],[0,2]],'#e9a23b'],
-['N',[[0,0],[0,1],[1,1],[1,2],[1,3]],'#8b6fb1'],
-['T',[[0,0],[1,0],[2,0],[1,1],[1,2]],'#d65a83'],
-['U',[[0,0],[2,0],[0,1],[1,1],[2,1]],'#5b9b55'],
-['V',[[0,0],[0,1],[0,2],[1,2],[2,2]],'#d17b36'],
-['W',[[0,0],[0,1],[1,1],[1,2],[2,2]],'#4e91a8'],
-['X',[[1,0],[0,1],[1,1],[2,1],[1,2]],'#7b78bd'],
-['Y',[[0,0],[0,1],[0,2],[0,3],[1,1]],'#bc6c8f'],
-['Z',[[0,0],[1,0],[1,1],[1,2],[2,2]],'#6c8f70']
+['F',[[1,0],[2,0],[0,1],[1,1],[1,2]],'#8fb9d2'],
+['I',[[0,0],[0,1],[0,2],[0,3],[0,4]],'#9bcdb8'],
+['L',[[0,0],[0,1],[0,2],[0,3],[1,3]],'#f0d27b'],
+['P',[[0,0],[1,0],[0,1],[1,1],[0,2]],'#efb58c'],
+['N',[[0,0],[0,1],[1,1],[1,2],[1,3]],'#b9a5d1'],
+['T',[[0,0],[1,0],[2,0],[1,1],[1,2]],'#e6a0aa'],
+['U',[[0,0],[2,0],[0,1],[1,1],[2,1]],'#80c8c1'],
+['V',[[0,0],[0,1],[0,2],[1,2],[2,2]],'#b8cb83'],
+['W',[[0,0],[0,1],[1,1],[1,2],[2,2]],'#a5a9d4'],
+['X',[[1,0],[0,1],[1,1],[2,1],[1,2]],'#df9b88'],
+['Y',[[0,0],[0,1],[0,2],[0,3],[1,1]],'#9fc6df'],
+['Z',[[0,0],[1,0],[1,1],[1,2],[2,2]],'#91c9b6']
 ];
 const pieces=definitions.map(([name,cells,color],id)=>({id,name,cells:cells.map(([x,y])=>[x,y]),color,placed:false,x:0,y:0}));
 const COLS=10,ROWS=6;
@@ -85,56 +92,29 @@ function rotate(cells){return normalize(cells.map(([x,y])=>[-y,x]));}
 function flip(cells){return normalize(cells.map(([x,y])=>[-x,y]));}
 function dims(cells){const b=bounds(cells);return{w:b.maxX-b.minX+1,h:b.maxY-b.minY+1};}
 function resize() {
-  const width = Math.max(260, Math.min(canvas.parentElement.clientWidth - 8, 860));
-  layoutWidth = width;
-  const isMobile = window.matchMedia('(max-width: 600px)').matches;
-  trayCols = isMobile ? 3 : 6;
-  dpr = window.devicePixelRatio || 1;
-
-  if (isMobile) {
-    // スマホ：盤面と12個のピースを画面内に収める
-    boardY = 30;
-    const canvasTop = canvas.getBoundingClientRect().top;
-    const availableHeight = Math.max(320, window.innerHeight - canvasTop - 8);
-    cell = Math.min(34, (layoutWidth - 20) / COLS);
-    trayY = boardY + ROWS * cell + 24;
-    const trayRows = Math.ceil(pieces.length / trayCols);
-    const rowGapAndLabel = 18;
-    const verticalMini = (availableHeight - trayY - trayRows * rowGapAndLabel - 10) / (trayRows * 5);
-    const horizontalMini = (layoutWidth - 24 - (trayCols - 1) * 12) / (trayCols * 5);
-    mini = Math.max(7, Math.min(18, cell * 0.58, horizontalMini, verticalMini));
-    trayGap = (layoutWidth - 24) / trayCols - (5 * mini + 12);
-    layoutHeight = trayY + trayRows * (5 * mini + rowGapAndLabel) + 10;
-  } else {
-    // PC：従来の大きさを維持
-    cell = Math.min(54, (layoutWidth - 34) / COLS);
-    mini = Math.max(12, Math.min(25, cell * 0.48));
-    boardY = 48;
-    trayY = boardY + ROWS * cell + 72;
-    const trayRows = Math.ceil(pieces.length / trayCols);
-    trayGap = (layoutWidth - 24 - trayCols * (5 * mini + 12)) / trayCols;
-    layoutHeight = trayY + trayRows * (5 * mini + 28) + 28;
-  }
-
-  boardX = (layoutWidth - COLS * cell) / 2;
-  canvas.width = Math.round(layoutWidth * dpr);
-  canvas.height = Math.round(layoutHeight * dpr);
-  canvas.style.width = layoutWidth + 'px';
-  canvas.style.height = layoutHeight + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  draw();
+  const width=Math.max(260,Math.min(canvas.parentElement.clientWidth-8,860));
+  layoutWidth=width;
+  const isMobile=window.matchMedia('(max-width: 600px)').matches;
+  trayCols=isMobile?3:6;
+  dpr=window.devicePixelRatio||1;
+  cell=Math.min(isMobile?36:54,(layoutWidth-(isMobile?14:34))/COLS);
+  mini=isMobile?Math.max(10,Math.min(17,cell*.48)):Math.max(12,Math.min(25,cell*.48));
+  boardY=isMobile?18:44;
+  trayY=boardY+ROWS*cell+(isMobile?34:58);
+  const trayRows=Math.ceil(pieces.length/trayCols);
+  const rowStep=5*mini+(isMobile?25:30);
+  layoutHeight=trayY+trayRows*rowStep+(isMobile?14:24);
+  boardX=(layoutWidth-COLS*cell)/2;
+  canvas.width=Math.round(layoutWidth*dpr);canvas.height=Math.round(layoutHeight*dpr);
+  canvas.style.width=layoutWidth+'px';canvas.style.height=layoutHeight+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);draw();
 }
 function trayOrigin(p) {
-  const col = p.id % trayCols;
-  const row = Math.floor(p.id / trayCols);
-  const isMobile=window.matchMedia('(max-width: 600px)').matches;
-  const rowStep = isMobile?5*mini+18:5*mini+28;
-  const totalWidth=trayCols*5*mini+(trayCols-1)*12;
-  const startX=(layoutWidth-totalWidth)/2+8;
-  return {
-    x: 60 + col * (5 * mini + 12 + trayGap),
-    y: trayY + row * rowStep
-  };
+  const col=p.id%trayCols,row=Math.floor(p.id/trayCols);
+  const slot=(layoutWidth-24)/trayCols;
+  const d=dims(p.cells);
+  const rowStep=5*mini+(window.matchMedia('(max-width: 600px)').matches?25:30);
+  return{x:12+col*slot+(slot-d.w*mini)/2,y:trayY+row*rowStep};
 }
 function getPieceAt(px,py){
  for(let i=pieces.length-1;i>=0;i--){const p=pieces[i];
@@ -143,22 +123,55 @@ function getPieceAt(px,py){
  }return null;
 }
 function drawPiece(cells,x,y,size,color,alpha=1){
- ctx.save();ctx.globalAlpha=alpha;
- for(const[cx,cy]of cells){const px=x+cx*size,py=y+cy*size;ctx.fillStyle=color;ctx.fillRect(px+1,py+1,size-2,size-2);ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(1,size*.045);ctx.strokeRect(px+1,py+1,size-2,size-2);ctx.strokeStyle='#26364a22';ctx.lineWidth=1;ctx.strokeRect(px+1,py+1,size-2,size-2);}
- ctx.restore();
+  ctx.save();ctx.globalAlpha=alpha;
+  const path=new Path2D();
+  const set=new Set(cells.map(([cx,cy])=>cx+','+cy));
+  const radius=Math.max(2,Math.min(7,size*.13));
+  // Rounded squares plus short bridges make one continuous piece with no internal seams.
+  for(const [cx,cy] of cells)path.roundRect(x+cx*size,y+cy*size,size,size,radius);
+  for(const [cx,cy] of cells){
+    if(set.has((cx+1)+','+cy))path.rect(x+(cx+1)*size-radius,y+cy*size,size?radius*2:0,size);
+    if(set.has(cx+','+(cy+1)))path.rect(x+cx*size,y+(cy+1)*size-radius,size,radius*2);
+  }
+  ctx.save();ctx.shadowColor='rgba(80,75,65,.22)';ctx.shadowBlur=Math.max(3,size*.13);ctx.shadowOffsetY=Math.max(2,size*.07);
+  ctx.fillStyle=color;ctx.fill(path);ctx.restore();
+  // A shared texture is clipped to the complete pentomino silhouette, not tiled as separate outlined squares.
+  ctx.save();ctx.clip(path);
+  if(pieceTexture.complete&&pieceTexture.naturalWidth){
+    const b=bounds(cells),w=(b.maxX+1)*size-b.minX*size,h=(b.maxY+1)*size-b.minY*size;
+    ctx.globalAlpha=.18;ctx.drawImage(pieceTexture,x+b.minX*size,y+b.minY*size,w,h);
+    ctx.globalAlpha=.22;ctx.fillStyle=color;ctx.fillRect(x+b.minX*size,y+b.minY*size,w,h);
+  }
+  const b=bounds(cells),gx=x+b.minX*size,gy=y+b.minY*size,gw=(b.maxX-b.minX+1)*size,gh=(b.maxY-b.minY+1)*size;
+  const shine=ctx.createLinearGradient(gx,gy,gx,gy+gh);shine.addColorStop(0,'rgba(255,255,255,.24)');shine.addColorStop(.45,'rgba(255,255,255,.02)');shine.addColorStop(1,'rgba(70,65,55,.08)');
+  ctx.globalAlpha=1;ctx.fillStyle=shine;ctx.fill(path);ctx.restore();
+  ctx.restore();
 }
 function draw(){
- ctx.clearRect(0,0,layoutWidth,layoutHeight);ctx.fillStyle='#536176';ctx.font='600 14px system-ui';ctx.fillText('盤面',boardX,26);
- ctx.fillStyle='#f8fafc';ctx.fillRect(boardX,boardY,COLS*cell,ROWS*cell);ctx.strokeStyle='#9aa8ba';ctx.lineWidth=1;
- for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(boardX+x*cell,boardY);ctx.lineTo(boardX+x*cell,boardY+ROWS*cell);ctx.stroke();}
- for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(boardX,boardY+y*cell);ctx.lineTo(boardX+COLS*cell,boardY+y*cell);ctx.stroke();}
+ ctx.clearRect(0,0,layoutWidth,layoutHeight);
+ // Board: ivory board surface, fine grid and a narrow soft rim.
+ const bw=COLS*cell,bh=ROWS*cell;
+ ctx.save();ctx.shadowColor='rgba(82,76,65,.15)';ctx.shadowBlur=10;ctx.shadowOffsetY=3;
+ ctx.fillStyle='#eeeae1';ctx.beginPath();ctx.roundRect(boardX-5,boardY-5,bw+10,bh+10,12);ctx.fill();ctx.restore();
+ ctx.save();ctx.beginPath();ctx.roundRect(boardX,boardY,bw,bh,8);ctx.clip();
+ ctx.fillStyle='#f8f6f0';ctx.fillRect(boardX,boardY,bw,bh);
+ if(boardTexture.complete&&boardTexture.naturalWidth){ctx.globalAlpha=.12;ctx.drawImage(boardTexture,boardX,boardY,bw,bh);ctx.globalAlpha=1;}
+ ctx.restore();
+ ctx.strokeStyle='#d5d4ce';ctx.lineWidth=Math.max(1,cell*.025);
+ for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(boardX+x*cell,boardY);ctx.lineTo(boardX+x*cell,boardY+bh);ctx.stroke();}
+ for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(boardX,boardY+y*cell);ctx.lineTo(boardX+bw,boardY+y*cell);ctx.stroke();}
+ ctx.strokeStyle='#d6d1c6';ctx.lineWidth=1.2;ctx.beginPath();ctx.roundRect(boardX-1,boardY-1,bw+2,bh+2,8);ctx.stroke();
+ // Tray background
+ const trayRows=Math.ceil(pieces.length/trayCols),rowStep=5*mini+(window.matchMedia('(max-width: 600px)').matches?25:30);
+ const trayH=trayRows*rowStep-5;
+ ctx.save();ctx.shadowColor='rgba(82,76,65,.10)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;ctx.fillStyle='#faf8f2';ctx.strokeStyle='#e5e0d6';ctx.lineWidth=1;
+ ctx.beginPath();ctx.roundRect(7,trayY-9,layoutWidth-14,trayH+18,14);ctx.fill();ctx.stroke();ctx.restore();
  for(const p of pieces)if(p.placed&&!(drag&&drag.piece===p))drawPiece(p.cells,boardX+p.x*cell,boardY+p.y*cell,cell,p.color);
  for(const p of pieces)if(!p.placed&&!(drag&&drag.piece===p)){
-  const o=trayOrigin(p),d=dims(p.cells);drawPiece(p.cells,o.x,o.y,mini,p.color);
-  ctx.fillStyle='#4d5b70';ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.fillText(p.name,o.x+d.w*mini/2,o.y+d.h*mini+14);ctx.textAlign='left';
-  if(selected===p){ctx.strokeStyle='#2459a6';ctx.lineWidth=2.5;ctx.strokeRect(o.x-3,o.y-3,d.w*mini+6,d.h*mini+6);}
+  const o=trayOrigin(p);drawPiece(p.cells,o.x,o.y,mini,p.color);
+  if(selected===p){const d=dims(p.cells);ctx.strokeStyle='#9a9a91';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.strokeRect(o.x-3,o.y-3,d.w*mini+6,d.h*mini+6);ctx.setLineDash([]);}
  }
- if(drag){const p=drag.piece,gx=drag.pointerX-drag.grabX*cell,gy=drag.pointerY-drag.grabY*cell;drawPiece(p.cells,gx,gy,cell,p.color,.86);}
+ if(drag){const p=drag.piece,gx=drag.pointerX-drag.grabX*cell,gy=drag.pointerY-drag.grabY*cell;drawPiece(p.cells,gx,gy,cell,p.color,.9);}
  updateStatus();
 }
 function updateStatus(){
@@ -174,15 +187,7 @@ canvas.addEventListener('pointerdown',e=>{
  drag={piece:p,grabX:hit.anchor[0],grabY:hit.anchor[1],pointerX:pt.x,pointerY:pt.y,before};
  canvas.setPointerCapture(e.pointerId);draw();
 });
-canvas.addEventListener('pointermove', e => {
-  if (!drag) return;
-  e.preventDefault();
-
-  const pt = point(e);
-  drag.pointerX = pt.x;
-  drag.pointerY = pt.y;
-  draw();
-}, { passive: false });
+canvas.addEventListener('pointermove',e=>{if(!drag)return;const pt=point(e);drag.pointerX=pt.x;drag.pointerY=pt.y;draw();});
 function finishDrag(e){
  if(!drag)return;const pt=point(e),d=drag,p=d.piece;
  const x=Math.round((pt.x-boardX)/cell-d.grabX),y=Math.round((pt.y-boardY)/cell-d.grabY);
@@ -201,3 +206,4 @@ window.addEventListener('resize',resize);resize();
 })();
 </script>
 </body>
+</html>
