@@ -98,7 +98,7 @@ function resize() {
   trayCols=isMobile?4:6;
   dpr=window.devicePixelRatio||1;
   cell=Math.min(isMobile?36:54,(layoutWidth-(isMobile?14:34))/COLS);
-  mini=isMobile?Math.max(10,Math.min(17,cell*.48)):Math.max(12,Math.min(25,cell*.48));
+  mini=isMobile?Math.max(10,Math.min(14,cell*.48)):Math.max(12,Math.min(25,cell*.48));
   boardY=isMobile?18:44;
   trayY=boardY+ROWS*cell+(isMobile?34:58);
   const trayRows=Math.ceil(pieces.length/trayCols);
