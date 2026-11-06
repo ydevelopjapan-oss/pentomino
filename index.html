@@ -177,6 +177,7 @@ const COLS=10,ROWS=6;
 let boardX=0,boardY=0,cell=40,mini=22,trayY=0,trayCols=6,trayGap=0;
 let selected=null,drag=null,layoutWidth=700,layoutHeight=760,dpr=1;
 let history=[];
+let pieceSqueeze=0,squeezeAnimation=null;
 function saveState(){return{pieces:pieces.map(p=>({cells:p.cells.map(([x,y])=>[x,y]),placed:p.placed,x:p.x,y:p.y})),selectedId:selected?selected.id:null};}
 function restoreState(state){
  state.pieces.forEach((s,i)=>{pieces[i].cells=s.cells.map(([x,y])=>[x,y]);pieces[i].placed=s.placed;pieces[i].x=s.x;pieces[i].y=s.y;});
@@ -223,6 +224,17 @@ function getPieceAt(px,py){
 
 function drawPiece(cells, x, y, size, color, alpha = 1) {
   ctx.save();
+   // スクイーズ変形
+  const squeeze = pieceSqueeze || 0;
+
+  if (squeeze > 0) {
+    const centerX = x + (Math.max(...cells.map(c => c[0])) + 1) * size / 2;
+    const centerY = y + (Math.max(...cells.map(c => c[1])) + 1) * size / 2;
+
+    ctx.translate(centerX, centerY);
+    ctx.scale(1 + squeeze * 0.10, 1 - squeeze * 0.16);
+    ctx.translate(-centerX, -centerY);
+  }
   ctx.globalAlpha = alpha;
 
   const radius = size * 0.24;
