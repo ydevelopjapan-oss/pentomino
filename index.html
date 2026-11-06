@@ -177,7 +177,6 @@ const COLS=10,ROWS=6;
 let boardX=0,boardY=0,cell=40,mini=22,trayY=0,trayCols=6,trayGap=0;
 let selected=null,drag=null,layoutWidth=700,layoutHeight=760,dpr=1;
 let history=[];
-let squeezePiece = null;
 function saveState(){return{pieces:pieces.map(p=>({cells:p.cells.map(([x,y])=>[x,y]),placed:p.placed,x:p.x,y:p.y})),selectedId:selected?selected.id:null};}
 function restoreState(state){
  state.pieces.forEach((s,i)=>{pieces[i].cells=s.cells.map(([x,y])=>[x,y]);pieces[i].placed=s.placed;pieces[i].x=s.x;pieces[i].y=s.y;});
@@ -225,15 +224,7 @@ function getPieceAt(px,py){
 function drawPiece(cells, x, y, size, color, alpha = 1) {
   ctx.save();
   ctx.globalAlpha = alpha;
-  // スクイーズ：押しているピースだけを変形
-  if (squeezePiece) {
-    const centerX = x + (Math.max(...cells.map(c => c[0])) + 0.5) * size;
-    const centerY = y + (Math.max(...cells.map(c => c[1])) + 0.5) * size;
 
-    ctx.translate(centerX, centerY);
-    ctx.scale(1.10, 0.84);
-    ctx.translate(-centerX, -centerY);
-  }
   const radius = size * 0.24;
   const overlap = size * 0.04;
 
@@ -344,17 +335,11 @@ function draw(){
  const trayH=trayRows*rowStep-5;
  ctx.save();ctx.shadowColor='rgba(82,76,65,.10)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;ctx.fillStyle='#faf8f2';ctx.strokeStyle='#e5e0d6';ctx.lineWidth=1;
  ctx.beginPath();ctx.roundRect(7,trayY-9,layoutWidth-14,trayH+18,14);ctx.fill();ctx.stroke();ctx.restore();
- for(const p of pieces)if(p.placed&&!(drag&&drag.piece===p)){
-  squeezePiece = p === selected && !drag;
-  drawPiece(p.cells,boardX+p.x*cell,boardY+p.y*cell,cell,p.color);
-}
+ for(const p of pieces)if(p.placed&&!(drag&&drag.piece===p))drawPiece(p.cells,boardX+p.x*cell,boardY+p.y*cell,cell,p.color);
  for(const p of pieces)if(!p.placed&&!(drag&&drag.piece===p)){
- const o=trayOrigin(p);
-squeezePiece = p === selected;
-drawPiece(p.cells,o.x,o.y,mini,p.color);
+  const o=trayOrigin(p);drawPiece(p.cells,o.x,o.y,mini,p.color);
   if(selected===p){const d=dims(p.cells);ctx.strokeStyle='#9a9a91';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.strokeRect(o.x-3,o.y-3,d.w*mini+6,d.h*mini+6);ctx.setLineDash([]);}
  }
- squeezePiece = false;
  if(drag){const p=drag.piece,gx=drag.pointerX-drag.grabX*cell,gy=drag.pointerY-drag.grabY*cell;drawPiece(p.cells,gx,gy,cell,p.color,.9);}
  updateStatus();
 }
@@ -366,34 +351,10 @@ function updateStatus(){
 function point(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*layoutWidth/r.width,y:(e.clientY-r.top)*layoutHeight/r.height};}
 canvas.addEventListener('pointerdown',e=>{
  e.preventDefault();
-
- const pt=point(e),hit=getPieceAt(pt.x,pt.y);
-
- if(!hit){
-   selected=null;
-   draw();
-   return;
- }
-
- const p=hit.piece;
- selected=p;
- squeezePiece=p;
-
- const before=saveState();
-
- if(hit.fromBoard)p.placed=false;
-
- drag={
-   piece:p,
-   grabX:hit.anchor[0],
-   grabY:hit.anchor[1],
-   pointerX:pt.x,
-   pointerY:pt.y,
-   before
- };
-
- canvas.setPointerCapture(e.pointerId);
- draw();
+ const pt=point(e),hit=getPieceAt(pt.x,pt.y);if(!hit){selected=null;draw();return;}
+ const before=saveState(),p=hit.piece;selected=p;if(hit.fromBoard)p.placed=false;
+ drag={piece:p,grabX:hit.anchor[0],grabY:hit.anchor[1],pointerX:pt.x,pointerY:pt.y,before};
+ canvas.setPointerCapture(e.pointerId);draw();
 });
 canvas.addEventListener('pointermove',e=>{if(!drag)return;const pt=point(e);drag.pointerX=pt.x;drag.pointerY=pt.y;draw();});
 function finishDrag(e){
