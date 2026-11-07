@@ -236,8 +236,8 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
   // 影は右下方向へ
   ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
   ctx.shadowBlur = size * 0.16;
-  ctx.shadowOffsetX = size * 0.04;
-  ctx.shadowOffsetY = size * 0.09;
+  ctx.shadowOffsetX = size * 0.07;
+  ctx.shadowOffsetY = size * 0.07;
 
   // 左上から右下の順に描画する
   const drawOrder = [...cells].sort((a, b) => {
@@ -296,8 +296,8 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
     // 次のクッションにも影を適用
     ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
     ctx.shadowBlur = size * 0.16;
-    ctx.shadowOffsetX = size * 0.04;
-    ctx.shadowOffsetY = size * 0.09;
+    ctx.shadowOffsetX = size * 0.07;
+    ctx.shadowOffsetY = size * 0.07;
   }
 
  function lightenColor(hex, amount) {
