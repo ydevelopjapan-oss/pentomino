@@ -289,6 +289,24 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
     ctx.shadowOffsetY = size * 0.09;
   }
 
+ function lightenColor(hex, amount) {
+  return adjustColor(hex, amount);
+}
+
+function darkenColor(hex, amount) {
+  return adjustColor(hex, -amount);
+}
+
+function adjustColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((num >> 8) & 255) + amount));
+  const b = Math.max(0, Math.min(255, (num & 255) + amount));
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
   ctx.restore();
 }
 
