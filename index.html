@@ -265,24 +265,13 @@ function drawPiece(cells, x, y, size, color, alpha = 1, textureAngle = 0) {
     return `rgb(${r}, ${g}, ${b})`;
   }
 
-  const angle = textureAngle * Math.PI / 180;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-
   for (const [cx, cy] of cells) {
     ctx.save();
 
-    // 各クッションの中心を基準に質感を回転
-    ctx.translate(
-      x + cx * size + size / 2,
-      y + cy * size + size / 2
-    );
-    ctx.rotate(angle);
-
-    const px = -size / 2 - protrude;
-    const py = -size / 2 - protrude;
-    const w = size + protrude - seam;
-    const h = size + protrude - seam;
+    const px = -size / 2 - seam;
+    const py = -size / 2 - seam;
+    const w = size + protrude;
+    const h = size + protrude;
 
     const gradient = ctx.createLinearGradient(
       px, py, px + w, py + h
