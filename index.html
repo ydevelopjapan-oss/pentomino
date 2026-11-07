@@ -156,7 +156,6 @@ const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const pieceTexture=new Image(),boardTexture=new Image();
 pieceTexture.src='assets/piece-texture.png';boardTexture.src='assets/board-texture.png';
 let assetsReady=0;[pieceTexture,boardTexture].forEach(img=>img.onload=()=>{assetsReady++;draw();});
-const statusEl=document.getElementById('status');
 const rotateBtn=document.getElementById('rotate'),flipBtn=document.getElementById('flip');
 const resetBtn=document.getElementById('reset'),undoBtn=document.getElementById('undo');
 const definitions=[
@@ -369,9 +368,9 @@ for (const p of placedPieces) {
  updateStatus();
 }
 function updateStatus(){
- const count=pieces.filter(p=>p.placed).length;statusEl.textContent=`配置済み：${count} / 12`;
- if(count===12){statusEl.textContent='🎉 クリア！おめでとう！';statusEl.classList.add('win');}else statusEl.classList.remove('win');
- rotateBtn.disabled=!selected;flipBtn.disabled=!selected;undoBtn.disabled=history.length===0;
+ rotateBtn.disabled=!selected;
+ flipBtn.disabled=!selected;
+ undoBtn.disabled=history.length===0;
 }
 function point(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*layoutWidth/r.width,y:(e.clientY-r.top)*layoutHeight/r.height};}
 canvas.addEventListener('pointerdown',e=>{
