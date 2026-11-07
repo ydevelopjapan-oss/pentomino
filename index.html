@@ -221,35 +221,25 @@ function getPieceAt(px,py){
  }return null;
 }
 
-
 function drawPiece(cells, x, y, size, color, alpha = 1) {
   ctx.save();
   ctx.globalAlpha = alpha;
 
+  const has = (x, y) =>
+    cells.some(([cx, cy]) => cx === x && cy === y);
+
+  // 左上方向へのはみ出しと、クッション間の隙間
   const protrude = size * 0.3;
   const seam = size * 0.02;
   const radius = size * 0.4;
 
-  // 側面の厚み
-  const depth = size * 0.3;
+  // 影は右下方向へ
+  ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
+  ctx.shadowBlur = size * 0.16;
+  ctx.shadowOffsetX = size * 0.04;
+  ctx.shadowOffsetY = size * 0.09;
 
-  function lightenColor(hex, amount) {
-    return adjustColor(hex, amount);
-  }
-
-  function darkenColor(hex, amount) {
-    return adjustColor(hex, -amount);
-  }
-
-  function adjustColor(hex, amount) {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const r = Math.max(0, Math.min(255, (num >> 16) + amount));
-    const g = Math.max(0, Math.min(255, ((num >> 8) & 255) + amount));
-    const b = Math.max(0, Math.min(255, (num & 255) + amount));
-    return `rgb(${r}, ${g}, ${b})`;
-  }
-
-  // 左上から右下の順に描画
+  // 左上から右下の順に描画する
   const drawOrder = [...cells].sort((a, b) => {
     const da = a[0] + a[1];
     const db = b[0] + b[1];
@@ -259,31 +249,7 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
     return a[0] - b[0];
   });
 
-  // ① 先に側面をすべて描く
-  ctx.shadowColor = 'rgba(70, 75, 85, 0.18)';
-  ctx.shadowBlur = size * 0.12;
-  ctx.shadowOffsetX = size * 0.04;
-  ctx.shadowOffsetY = size * 0.07;
-
-  for (const [cx, cy] of drawOrder) {
-    const px = x + cx * size - protrude + depth;
-    const py = y + cy * size - protrude + depth;
-
-    const w = size + protrude - seam;
-    const h = size + protrude - seam;
-
-    ctx.beginPath();
-    ctx.roundRect(px, py, w, h, radius);
-    ctx.fillStyle = darkenColor(color, 28);
-    ctx.fill();
-  }
-
-  // ② 側面の影を止めて、前面を描く
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-
+  // 奥のマスから手前のマスへ描く
   for (const [cx, cy] of drawOrder) {
     const px = x + cx * size - protrude;
     const py = y + cy * size - protrude;
@@ -295,21 +261,27 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
       px, py, px + w, py + h
     );
 
-    gradient.addColorStop(0, lightenColor(color, 32));
-    gradient.addColorStop(0.5, lightenColor(color, 24));
-    gradient.addColorStop(1, lightenColor(color, 12));
+    gradient.addColorStop(0, lightenColor(color, 30));
+    gradient.addColorStop(0.5, color);
+    gradient.addColorStop(1, darkenColor(color, 18));
 
     ctx.beginPath();
     ctx.roundRect(px, py, w, h, radius);
+
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // 前面の境界
+    // クッションの境界
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
     ctx.strokeStyle = 'rgba(90, 85, 80, 0.13)';
     ctx.lineWidth = Math.max(0.7, size * 0.025);
     ctx.stroke();
 
-    // 前面の光沢
+    // 左上側の柔らかい光沢
     ctx.strokeStyle = 'rgba(255,255,255,0.42)';
     ctx.lineWidth = Math.max(1, size * 0.035);
     ctx.lineCap = 'round';
@@ -320,10 +292,35 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
     ctx.moveTo(px + 2, py + radius);
     ctx.lineTo(px + 2, py + h - radius);
     ctx.stroke();
+
+    // 次のクッションにも影を適用
+    ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
+    ctx.shadowBlur = size * 0.16;
+    ctx.shadowOffsetX = size * 0.04;
+    ctx.shadowOffsetY = size * 0.09;
   }
+
+ function lightenColor(hex, amount) {
+  return adjustColor(hex, amount);
+}
+
+function darkenColor(hex, amount) {
+  return adjustColor(hex, -amount);
+}
+
+function adjustColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((num >> 8) & 255) + amount));
+  const b = Math.max(0, Math.min(255, (num & 255) + amount));
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
   ctx.restore();
 }
+
 
 function draw(){
  ctx.clearRect(0,0,layoutWidth,layoutHeight);
