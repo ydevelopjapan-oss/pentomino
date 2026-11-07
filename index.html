@@ -261,9 +261,9 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
       px, py, px + w, py + h
     );
 
-    gradient.addColorStop(0, lightenColor(color, 30));
-    gradient.addColorStop(0.5, color);
-    gradient.addColorStop(1, darkenColor(color, 18));
+    gradient.addColorStop(0, lightenColor(color, 32));
+gradient.addColorStop(0.5, lightenColor(color, 24));
+gradient.addColorStop(1, lightenColor(color, 12));
 
     ctx.beginPath();
     ctx.roundRect(px, py, w, h, radius);
