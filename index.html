@@ -267,7 +267,10 @@ function drawPiece(cells, x, y, size, color, alpha = 1, textureAngle = 0) {
 
   for (const [cx, cy] of cells) {
     ctx.save();
-
+       ctx.translate(
+      x + cx * size + size / 2,
+      y + cy * size + size / 2
+    );
     const px = -size / 2 - seam;
     const py = -size / 2 - seam;
     const w = size + protrude;
