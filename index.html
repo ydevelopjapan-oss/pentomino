@@ -145,7 +145,6 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-
     </button>
   </div>
 </div>
-<div id="status"></div>
 <div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas></div>
 <p class="help">ピースをタップして選択、ドラッグして盤面へ。選択中は「回転」「反転」で向きを変えられます。<br>
 盤面上のピースもドラッグして戻したり、置き直したりできます。重なったり盤面からはみ出したりする場所には置けません。</p>
@@ -173,34 +172,14 @@ const definitions=[
 ['Y',[[0,0],[0,1],[0,2],[0,3],[1,1]],'#9fc6df'],
 ['Z',[[0,0],[1,0],[1,1],[1,2],[2,2]],'#91c9b6']
 ];
-const pieces=definitions.map(([name,cells,color],id)=>({
-  id,
-  name,
-  cells:cells.map(([x,y])=>[x,y]),
-  color,
-  placed:false,
-  x:0,
-  y:0,
-  textureAngle:0
-}));
+const pieces=definitions.map(([name,cells,color],id)=>({id,name,cells:cells.map(([x,y])=>[x,y]),color,placed:false,x:0,y:0}));
 const COLS=10,ROWS=6;
 let boardX=0,boardY=0,cell=40,mini=22,trayY=0,trayCols=6,trayGap=0;
 let selected=null,drag=null,layoutWidth=700,layoutHeight=760,dpr=1;
 let history=[];
-function saveState(){
- return{
-  pieces:pieces.map(p=>({
-   cells:p.cells.map(([x,y])=>[x,y]),
-   placed:p.placed,
-   x:p.x,
-   y:p.y,
-   textureAngle:p.textureAngle
-  })),
-  selectedId:selected?selected.id:null
- };
-}
+function saveState(){return{pieces:pieces.map(p=>({cells:p.cells.map(([x,y])=>[x,y]),placed:p.placed,x:p.x,y:p.y})),selectedId:selected?selected.id:null};}
 function restoreState(state){
- state.pieces.forEach((s,i)=>{pieces[i].cells=s.cells.map(([x,y])=>[x,y]);pieces[i].placed=s.placed;pieces[i].x=s.x;pieces[i].y=s.y;pieces[i].textureAngle=s.textureAngle;});
+ state.pieces.forEach((s,i)=>{pieces[i].cells=s.cells.map(([x,y])=>[x,y]);pieces[i].placed=s.placed;pieces[i].x=s.x;pieces[i].y=s.y;});
  selected=state.selectedId===null?null:pieces[state.selectedId];
 }
 function undo(){if(!history.length)return;restoreState(history.pop());drag=null;draw();}
@@ -241,40 +220,31 @@ function getPieceAt(px,py){
  }return null;
 }
 
-function drawPiece(cells, x, y, size, color, alpha = 1, textureAngle = 0) {
+function drawPiece(cells, x, y, size, color, alpha = 1) {
   ctx.save();
   ctx.globalAlpha = alpha;
 
+  const has = (x, y) =>
+    cells.some(([cx, cy]) => cx === x && cy === y);
+
+  // 左上方向へのはみ出しと、クッション間の隙間
   const protrude = size * 0.3;
   const seam = size * 0.02;
-  const radius = size * 0.4;
+  const radius = size * 0.6;
 
-  function lightenColor(hex, amount) {
-    return adjustColor(hex, amount);
-  }
+  // 影は右下方向へ
+  ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
+  ctx.shadowBlur = size * 0.16;
+  ctx.shadowOffsetX = size * 0.04;
+  ctx.shadowOffsetY = size * 0.09;
 
-  function darkenColor(hex, amount) {
-    return adjustColor(hex, -amount);
-  }
-
-  function adjustColor(hex, amount) {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const r = Math.max(0, Math.min(255, (num >> 16) + amount));
-    const g = Math.max(0, Math.min(255, ((num >> 8) & 255) + amount));
-    const b = Math.max(0, Math.min(255, (num & 255) + amount));
-    return `rgb(${r}, ${g}, ${b})`;
-  }
-
+  // 5個のクッションを個別に描く
   for (const [cx, cy] of cells) {
-    ctx.save();
-       ctx.translate(
-      x + cx * size + size / 2,
-      y + cy * size + size / 2
-    );
-    const px = -size / 2 - seam;
-    const py = -size / 2 - seam;
-    const w = size + protrude;
-    const h = size + protrude;
+    const px = x + cx * size - protrude;
+    const py = y + cy * size - protrude;
+
+    const w = size + protrude - seam;
+    const h = size + protrude - seam;
 
     const gradient = ctx.createLinearGradient(
       px, py, px + w, py + h
@@ -284,16 +254,13 @@ function drawPiece(cells, x, y, size, color, alpha = 1, textureAngle = 0) {
     gradient.addColorStop(0.5, color);
     gradient.addColorStop(1, darkenColor(color, 18));
 
-    ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
-    ctx.shadowBlur = size * 0.16;
-    ctx.shadowOffsetX = size * 0.04;
-    ctx.shadowOffsetY = size * 0.09;
-
     ctx.beginPath();
     ctx.roundRect(px, py, w, h, radius);
+
     ctx.fillStyle = gradient;
     ctx.fill();
 
+    // クッションの境界
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
@@ -303,6 +270,7 @@ function drawPiece(cells, x, y, size, color, alpha = 1, textureAngle = 0) {
     ctx.lineWidth = Math.max(0.7, size * 0.025);
     ctx.stroke();
 
+    // 左上側の柔らかい光沢
     ctx.strokeStyle = 'rgba(255,255,255,0.42)';
     ctx.lineWidth = Math.max(1, size * 0.035);
     ctx.lineCap = 'round';
@@ -314,11 +282,34 @@ function drawPiece(cells, x, y, size, color, alpha = 1, textureAngle = 0) {
     ctx.lineTo(px + 2, py + h - radius);
     ctx.stroke();
 
-    ctx.restore();
+    // 次のクッションにも影を適用
+    ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
+    ctx.shadowBlur = size * 0.16;
+    ctx.shadowOffsetX = size * 0.04;
+    ctx.shadowOffsetY = size * 0.09;
   }
-   ctx.restore();
 
+ function lightenColor(hex, amount) {
+  return adjustColor(hex, amount);
 }
+
+function darkenColor(hex, amount) {
+  return adjustColor(hex, -amount);
+}
+
+function adjustColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((num >> 8) & 255) + amount));
+  const b = Math.max(0, Math.min(255, (num & 255) + amount));
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+  ctx.restore();
+}
+
 
 function draw(){
  ctx.clearRect(0,0,layoutWidth,layoutHeight);
@@ -352,21 +343,18 @@ function draw(){
 
 for (const p of placedPieces) {
   drawPiece(
-  p.cells,
-  boardX + p.x * cell,
-  boardY + p.y * cell,
-  cell,
-  p.color,
-  1,
-  p.textureAngle
-);
+    p.cells,
+    boardX + p.x * cell,
+    boardY + p.y * cell,
+    cell,
+    p.color
+  );
 }
  for(const p of pieces)if(!p.placed&&!(drag&&drag.piece===p)){
-  const o=trayOrigin(p);
-drawPiece(p.cells,o.x,o.y,mini,p.color,1,p.textureAngle);
+  const o=trayOrigin(p);drawPiece(p.cells,o.x,o.y,mini,p.color);
   if(selected===p){const d=dims(p.cells);ctx.strokeStyle='#9a9a91';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.strokeRect(o.x-3,o.y-3,d.w*mini+6,d.h*mini+6);ctx.setLineDash([]);}
  }
- if(drag){const p=drag.piece,gx=drag.pointerX-drag.grabX*cell,gy=drag.pointerY-drag.grabY*cell;drawPiece(p.cells,gx,gy,cell,p.color,.9,p.textureAngle);}
+ if(drag){const p=drag.piece,gx=drag.pointerX-drag.grabX*cell,gy=drag.pointerY-drag.grabY*cell;drawPiece(p.cells,gx,gy,cell,p.color,.9);}
  updateStatus();
 }
 function updateStatus(){
@@ -393,17 +381,9 @@ function finishDrag(e){
 }
 canvas.addEventListener('pointerup',finishDrag);
 canvas.addEventListener('pointercancel',()=>{if(drag){restoreState(drag.before);drag=null;draw();}});
-rotateBtn.addEventListener('click',()=>{
-  if(!selected)return;
-  if(selected.placed)selected.placed=false;
-
-  selected.cells=rotate(selected.cells);
-  selected.textureAngle=(selected.textureAngle+90)%360;
-
-  draw();
-});
+rotateBtn.addEventListener('click',()=>{if(!selected)return;if(selected.placed)selected.placed=false;selected.cells=rotate(selected.cells);draw();});
 flipBtn.addEventListener('click',()=>{if(!selected)return;if(selected.placed)selected.placed=false;selected.cells=flip(selected.cells);draw();});
-resetBtn.addEventListener('click',()=>{history.push(saveState());for(const p of pieces){p.cells=definitions[p.id][1].map(([x,y])=>[x,y]);p.placed=false;p.x=0;p.y=0;p.textureAngle=0;}selected=null;drag=null;draw();});
+resetBtn.addEventListener('click',()=>{history.push(saveState());for(const p of pieces){p.cells=definitions[p.id][1].map(([x,y])=>[x,y]);p.placed=false;p.x=0;p.y=0;}selected=null;drag=null;draw();});
 undoBtn.addEventListener('click',undo);
 window.addEventListener('resize',resize);resize();
 })();
