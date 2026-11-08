@@ -409,7 +409,30 @@ function finishDrag(e){
  const valid=p.cells.every(([cx,cy])=>{const bx=x+cx,by=y+cy;if(bx<0||bx>=COLS||by<0||by>=ROWS)return false;return!pieces.some(q=>q!==p&&q.placed&&q.cells.some(([qx,qy])=>q.x+qx===bx&&q.y+qy===by));});
  const inside=pt.x>=boardX-5&&pt.x<=boardX+COLS*cell+5&&pt.y>=boardY-5&&pt.y<=boardY+ROWS*cell+5;
  if(valid&&inside){history.push(d.before);p.x=x;p.y=y;p.placed=true;}else if(d.before.pieces[p.id].placed&&pt.y>=trayY){history.push(d.before);p.placed=false;selected=p}else {restoreState(d.before);selected=p;}
- drag=null;draw();
+ drag=null;
+draw();
+
+// 12ピースすべてが盤面に置かれたら
+if(pieces.every(p=>p.placed)){
+  const data={
+    pieces:pieces.map(p=>({
+      id:p.id,
+      name:p.name,
+      color:p.color,
+      cells:p.cells.map(([cx,cy])=>[
+        p.x+cx,
+        p.y+cy
+      ])
+    }))
+  };
+
+  localStorage.setItem(
+    "pentominoClearData",
+    JSON.stringify(data)
+  );
+
+  location.href="clear-animation.html";
+}
 }
 canvas.addEventListener('pointerup',finishDrag);
 canvas.addEventListener('pointercancel',()=>{if(drag){restoreState(drag.before);drag=null;draw();}});
