@@ -217,7 +217,98 @@ function play(){
   startTime=performance.now();
   animationId=requestAnimationFrame(animate);
 }
+// ロゴ風のぷっくりしたCLEAR文字
+function drawPuffyClear(cx, baseline, fontSize, alpha, t){
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.textAlign="center";
+  ctx.textBaseline="alphabetic";
 
+  const entrance=ease((t-2.5)/0.6);
+  const bounce=1+Math.sin(entrance*Math.PI)*0.08;
+
+  ctx.translate(cx,baseline);
+  ctx.scale(bounce,bounce);
+
+  ctx.font=`900 ${fontSize}px "Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif`;
+
+  const word="CLEAR!";
+
+  // 文字の影
+  ctx.save();
+  ctx.shadowColor="rgba(75,42,25,0.35)";
+  ctx.shadowBlur=fontSize*0.22;
+  ctx.shadowOffsetX=fontSize*0.06;
+  ctx.shadowOffsetY=fontSize*0.12;
+
+  // 外側の丸い縁
+  ctx.lineJoin="round";
+  ctx.lineWidth=fontSize*0.13;
+  ctx.strokeStyle="#875438";
+  ctx.strokeText(word,0,0);
+
+  // 内側の明るい縁
+  ctx.lineWidth=fontSize*0.055;
+  ctx.strokeStyle="#e5b18a";
+  ctx.strokeText(word,0,0);
+
+  // 茶色のグラデーション
+  const gradient=ctx.createLinearGradient(
+    0,-fontSize,0,fontSize*0.15
+  );
+  gradient.addColorStop(0,"#d9a47c");
+  gradient.addColorStop(0.35,"#bd8058");
+  gradient.addColorStop(1,"#98603f");
+
+  ctx.fillStyle=gradient;
+  ctx.fillText(word,0,0);
+  ctx.restore();
+
+  // 上側の光沢
+  ctx.save();
+  ctx.globalAlpha=alpha*0.55;
+  ctx.lineWidth=fontSize*0.025;
+  ctx.lineJoin="round";
+  ctx.strokeStyle="#fff0d9";
+  ctx.strokeText(word,0,-fontSize*0.025);
+  ctx.restore();
+
+  // ロゴ上部をイメージしたカラフルなクッション
+  const colors=["#62b8e7","#ffd45e","#f5a66d","#f18489"];
+  const positions=[
+    [-fontSize*1.25,-fontSize*1.05,-0.3],
+    [-fontSize*0.42,-fontSize*1.25,0.12],
+    [fontSize*0.42,-fontSize*1.12,-0.15],
+    [fontSize*1.18,-fontSize*1.0,0.3]
+  ];
+
+  positions.forEach(([x,y,angle],i)=>{
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(angle);
+
+    const s=fontSize*0.27;
+    ctx.shadowColor="rgba(80,50,30,0.2)";
+    ctx.shadowBlur=s*0.2;
+    ctx.shadowOffsetY=s*0.1;
+
+    roundedRect(-s/2,-s/2,s,s,s*0.25);
+    ctx.fillStyle=colors[i];
+    ctx.fill();
+
+    ctx.shadowBlur=0;
+    ctx.strokeStyle="rgba(255,255,255,0.45)";
+    ctx.lineWidth=s*0.07;
+    ctx.beginPath();
+    ctx.moveTo(-s*0.25,-s*0.25);
+    ctx.lineTo(s*0.12,-s*0.32);
+    ctx.stroke();
+
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
 function animate(now){
   const t=(now-startTime)/1000;
   ctx.clearRect(0,0,width,height);
@@ -267,17 +358,16 @@ function animate(now){
   }
 
   if(textAlpha>0){
-    ctx.save();
-    ctx.globalAlpha=textAlpha;
-    ctx.fillStyle="#f5f5ee";
-    ctx.textAlign="center";
-    ctx.font="700 "+Math.max(28,width*0.075)+"px system-ui";
-    ctx.shadowColor="rgba(165,198,192,0.8)";
-    ctx.shadowBlur=22;
-    ctx.fillText("CLEAR!",width/2,y+h+55);
-    ctx.restore();
-  }
+  const fontSize=Math.max(28,width*0.075);
 
+  drawPuffyClear(
+    width/2,
+    y+h+fontSize*1.15,
+    fontSize,
+    textAlpha,
+    t
+  );
+}
   if(t<4.5){
     animationId=requestAnimationFrame(animate);
   }else{
