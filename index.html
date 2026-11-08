@@ -319,7 +319,6 @@ function adjustColor(hex, amount) {
   ctx.restore();
 }
 
-
 function draw(){
  ctx.clearRect(0,0,layoutWidth,layoutHeight);
  // Board: ivory board surface, fine grid and a narrow soft rim.
@@ -339,26 +338,41 @@ function draw(){
  const trayH=trayRows*rowStep-5;
  ctx.save();ctx.shadowColor='rgba(82,76,65,.10)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;ctx.fillStyle='#faf8f2';ctx.strokeStyle='#e5e0d6';ctx.lineWidth=1;
  ctx.beginPath();ctx.roundRect(7,trayY-9,layoutWidth-14,trayH+18,14);ctx.fill();ctx.stroke();ctx.restore();
- const placedPieces = pieces
-  .filter(p => p.placed && !(drag && drag.piece === p))
-  .sort((a, b) => {
-    const da = a.x + a.y;
-    const db = b.x + b.y;
+ // 盤面上のクッションを1個ずつ集める
+ const boardCushions = [];
 
-    if (da !== db) return da - db;
-    if (a.y !== b.y) return a.y - b.y;
-    return a.x - b.x;
-  });
+ for (const p of pieces) {
+   if (!p.placed || (drag && drag.piece === p)) continue;
 
-for (const p of placedPieces) {
-  drawPiece(
-    p.cells,
-    boardX + p.x * cell,
-    boardY + p.y * cell,
-    cell,
-    p.color
-  );
-}
+   for (const [cx, cy] of p.cells) {
+     boardCushions.push({
+       x: p.x + cx,
+       y: p.y + cy,
+       color: p.color
+     });
+   }
+ }
+
+ // 盤面全体で左上から右下の順に描画
+ boardCushions.sort((a, b) => {
+   const da = a.x + a.y;
+   const db = b.x + b.y;
+
+   if (da !== db) return da - db;
+   if (a.y !== b.y) return a.y - b.y;
+   return a.x - b.x;
+ });
+
+ // クッション単体を描画する
+ for (const c of boardCushions) {
+   drawPiece(
+     [[0, 0]],
+     boardX + c.x * cell,
+     boardY + c.y * cell,
+     cell,
+     c.color
+   );
+ }
  for(const p of pieces)if(!p.placed&&!(drag&&drag.piece===p)){
   const o=trayOrigin(p);drawPiece(p.cells,o.x,o.y,mini,p.color);
   if(selected===p){const d=dims(p.cells);ctx.strokeStyle='#9a9a91';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.strokeRect(o.x-3,o.y-3,d.w*mini+6,d.h*mini+6);ctx.setLineDash([]);}
