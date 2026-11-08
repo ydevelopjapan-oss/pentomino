@@ -1,317 +1,296 @@
+
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ペントミノ・クリア演出実験</title>
-
+<title>ペントミノ・クリア演出</title>
 <style>
-* {
-  box-sizing: border-box;
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;
+  background:#282d38;color:white;
+  font-family:system-ui,sans-serif;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
 }
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: #282d38;
-  color: white;
-  font-family: system-ui, sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.scene {
-  width: 100%;
-  max-width: 850px;
-  padding: 20px;
-  text-align: center;
-}
-
-canvas {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-button {
-  margin-top: 18px;
-  padding: 12px 28px;
-  border: 1px solid #ffffff55;
-  border-radius: 30px;
-  background: #ffffff18;
-  color: white;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-button:active {
-  transform: scale(.97);
+.scene{width:100%;max-width:850px;padding:20px;text-align:center}
+canvas{display:block;width:100%;height:auto}
+.message{font-size:14px;color:#c4c9d0;margin:12px 0}
+button{
+  margin:8px 5px;padding:12px 24px;
+  border:1px solid #ffffff55;border-radius:30px;
+  background:#ffffff18;color:white;font-size:15px;
 }
 </style>
 </head>
-
 <body>
-
 <div class="scene">
   <canvas id="effect"></canvas>
+  <div class="message" id="message"></div>
   <button id="replay">もう一度再生</button>
+  <button id="back">本編に戻る</button>
 </div>
 
 <script>
-const canvas = document.getElementById("effect");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("effect");
+const ctx=canvas.getContext("2d");
+const COLS=10,ROWS=6;
 
-const COLS = 10;
-const ROWS = 6;
+let width=800,height=480;
+let startTime=0,animationId=null;
+let pieces=[];
 
-let width = 800;
-let height = 480;
-let startTime = 0;
-let animationId = null;
+const data=localStorage.getItem("pentominoClearData");
 
-const color = "#a5c6c0";
+if(data){
+  try{
+    pieces=JSON.parse(data).pieces;
+  }catch(e){
+    pieces=[];
+  }
+}
 
-// 6×10の盤面を埋める12ピースの配置
-// 各座標は [横, 縦]
-const solution = [
-  { name:"F", cells:[[0,0],[0,1],[1,1],[2,1],[1,2]] },
-  { name:"I", cells:[[1,0],[2,0],[3,0],[4,0],[5,0]] },
-  { name:"L", cells:[[0,2],[0,3],[1,3],[2,3],[3,3]] },
-  { name:"N", cells:[[3,1],[4,1],[5,1],[2,2],[3,2]] },
-  { name:"P", cells:[[0,4],[1,4],[2,4],[0,5],[1,5]] },
-  { name:"W", cells:[[4,3],[3,4],[4,4],[2,5],[3,5]] },
-  { name:"T", cells:[[5,3],[5,4],[4,5],[5,5],[6,5]] },
-  { name:"Y", cells:[[4,2],[5,2],[6,2],[7,2],[6,3]] },
-  { name:"X", cells:[[7,3],[6,4],[7,4],[8,4],[7,5]] },
-  { name:"U", cells:[[8,3],[9,3],[9,4],[8,5],[9,5]] },
-  { name:"V", cells:[[7,0],[8,0],[9,0],[9,1],[9,2]] },
-  { name:"Z", cells:[[6,0],[6,1],[7,1],[8,1],[8,2]] }
-];
+const message=document.getElementById("message");
 
-// 各マスがどのピースに属するか記録
-const owner = Array.from(
-  { length: ROWS },
-  () => Array(COLS).fill(-1)
-);
+if(!pieces.length){
+  message.textContent="本編で12ピースを完成させると、ここに実際の盤面が表示されます。";
+}else{
+  message.textContent="完成盤面を再生中";
+}
 
-solution.forEach((piece, id) => {
-  piece.cells.forEach(([x,y]) => {
-    owner[y][x] = id;
-  });
-});
-
-
-// 角を丸くした長方形
-function roundedRect(x, y, w, h, r) {
+function clamp(v){return Math.max(0,Math.min(1,v));}
+function ease(v){
+  v=clamp(v);
+  return v*v*(3-2*v);
+}
+function mix(a,b,t){
+  return a+(b-a)*t;
+}
+function hexToRgb(hex){
+  const n=parseInt(hex.replace("#",""),16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function colorMix(a,b,t){
+  const A=hexToRgb(a),B=hexToRgb(b);
+  return "rgb("+A.map((v,i)=>Math.round(mix(v,B[i],t))).join(",")+")";
+}
+function roundedRect(x,y,w,h,r){
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
+  ctx.roundRect(x,y,w,h,r);
 }
+function resize(){
+  width=Math.min(window.innerWidth-32,800);
+  height=Math.min(window.innerHeight-120,520);
+  height=Math.max(height,300);
 
-// 0～1の範囲に収める
-function clamp(v) {
-  return Math.max(0, Math.min(1, v));
-}
-
-// なめらかな変化
-function ease(v) {
-  v = clamp(v);
-  return v * v * (3 - 2 * v);
-}
-
-// 画面サイズ調整
-function resize() {
-  const dpr = window.devicePixelRatio || 1;
-
-  width = Math.min(window.innerWidth - 40, 800);
-  height = width * 0.6;
-
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
-
-  canvas.style.width = width + "px";
-  canvas.style.height = height + "px";
-
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=width*dpr;
+  canvas.height=height*dpr;
+  canvas.style.width=width+"px";
+  canvas.style.height=height+"px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
   play();
 }
 
-// アニメーション開始
-function play() {
-  if (animationId) {
-    cancelAnimationFrame(animationId);
+function getCells(){
+  const result=[];
+  for(const p of pieces){
+    for(const [x,y] of p.cells){
+      result.push({
+        x,y,
+        color:p.color,
+        pieceId:p.id
+      });
+    }
   }
-
-  startTime = performance.now();
-  animate(startTime);
+  return result;
 }
 
-function animate(now) {
-  const t = (now - startTime) / 1000;
+function drawBoard(x,y,cell,t,seamFade){
+  const cells=getCells();
+  const colorProgress=ease((t-1.1)/1.0);
+  const finalColor="#a5c6c0";
 
-  ctx.clearRect(0, 0, width, height);
+  // 最初は実際のピースの色で描画
+  // 時間とともに全体がひとつの色へまとまる
+  for(const c of cells){
+    const px=x+c.x*cell;
+    const py=y+c.y*cell;
+    const gap=cell*0.045;
+    const r=cell*0.25;
 
-  // 背景
-  ctx.fillStyle = "#282d38";
-  ctx.fillRect(0, 0, width, height);
+    const fill=colorMix(c.color,finalColor,colorProgress);
 
-  // アニメーションの進行度
-  const appear = ease((t - 0.3) / 0.7);
-  const seamFade = 1 - ease((t - 1.0) / 0.8);
-  const glow = ease((t - 1.5) / 0.7);
-  const clearText = ease((t - 2.5) / 0.6);
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.18)";
+    ctx.shadowBlur=cell*0.13;
+    ctx.shadowOffsetX=cell*0.05;
+    ctx.shadowOffsetY=cell*0.06;
 
-  // 完成形の大きさ
-  const baseW = width * 0.78;
-  const baseH = baseW * ROWS / COLS;
-
-  // 膨らみ・弾み
-  let bounce = 1;
-
-  if (t > 1.8 && t < 2.8) {
-    const p = (t - 1.8) / 1.0;
-    bounce = 1 + Math.sin(p * Math.PI * 2) *
-      Math.pow(1 - p, 2) * 0.09;
+    roundedRect(
+      px+gap,py+gap,
+      cell-gap*2,cell-gap*2,r
+    );
+    ctx.fillStyle=fill;
+    ctx.fill();
+    ctx.restore();
   }
 
-  const scale = (0.65 + appear * 0.35) * bounce;
+  // ピース同士の境界線を描き、徐々に消す
+  if(seamFade>0){
+    const owner=Array.from({length:ROWS},()=>Array(COLS).fill(-1));
 
-  const w = baseW * scale;
-  const h = baseH * scale;
+    for(const c of cells){
+      if(c.x>=0&&c.x<COLS&&c.y>=0&&c.y<ROWS){
+        owner[c.y][c.x]=c.pieceId;
+      }
+    }
 
-  const x = (width - w) / 2;
-  const y = height * 0.40 - h / 2;
-
-  ctx.save();
-
-  // 全体の影
-  ctx.shadowColor = "rgba(0,0,0,0.35)";
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetY = 16;
-
-  // クッション本体
-  const gradient = ctx.createLinearGradient(
-    x, y, x + w, y + h
-  );
-
-  gradient.addColorStop(0, "#d5e8df");
-  gradient.addColorStop(0.48, color);
-  gradient.addColorStop(1, "#719d98");
-
-  roundedRect(x, y, w, h, 25);
-  ctx.fillStyle = gradient;
-  ctx.fill();
-
-  ctx.restore();
-
- 
-  // 12ピースそれぞれの境界線
-  if (seamFade > 0.01) {
     ctx.save();
-    ctx.globalAlpha = seamFade * 0.65;
-    ctx.strokeStyle = "#668d88";
-    ctx.lineWidth = 1.5;
+    ctx.globalAlpha=seamFade*0.45;
+    ctx.strokeStyle="#59616a";
+    ctx.lineWidth=Math.max(1,cell*0.035);
 
-    for (let y = 0; y < ROWS; y++) {
-      for (let x = 0; x < COLS; x++) {
-        const id = owner[y][x];
+    for(let yy=0;yy<ROWS;yy++){
+      for(let xx=0;xx<COLS;xx++){
+        if(owner[yy][xx]<0)continue;
 
-        // 右隣が別ピース
-        if (x < COLS - 1 && owner[y][x+1] !== id) {
-          const px = (width-w)/2 + (x+1)*w/COLS;
-          const py = height*0.40 - h/2 + y*h/ROWS;
+        if(xx<COLS-1&&owner[yy][xx]!==owner[yy][xx+1]){
           ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(px, py+h/ROWS);
+          ctx.moveTo(x+(xx+1)*cell,y+yy*cell);
+          ctx.lineTo(x+(xx+1)*cell,y+(yy+1)*cell);
           ctx.stroke();
         }
 
-        // 下隣が別ピース
-        if (y < ROWS - 1 && owner[y+1][x] !== id) {
-          const px = (width-w)/2 + x*w/COLS;
-          const py = height*0.40 - h/2 + (y+1)*h/ROWS;
+        if(yy<ROWS-1&&owner[yy][xx]!==owner[yy+1][xx]){
           ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(px+w/COLS, py);
+          ctx.moveTo(x+xx*cell,y+(yy+1)*cell);
+          ctx.lineTo(x+(xx+1)*cell,y+(yy+1)*cell);
           ctx.stroke();
         }
       }
     }
-
     ctx.restore();
   }
 
-  // 左上の光沢
-  ctx.save();
-
-  ctx.globalAlpha = appear * 0.65;
-
-  const highlight = ctx.createLinearGradient(
-    x, y, x + w * 0.6, y + h * 0.6
-  );
-
-  highlight.addColorStop(0, "rgba(255,255,255,0.55)");
-  highlight.addColorStop(1, "rgba(255,255,255,0)");
-
-  roundedRect(x + 5, y + 5, w - 10, h - 10, 22);
-  ctx.strokeStyle = highlight;
-  ctx.lineWidth = 5;
-  ctx.stroke();
-
-  ctx.restore();
-
-  // 外周を走る光
-  if (glow > 0) {
+  // 境界が消えた後の、ひとつにつながったクッション
+  if(t>1.8){
+    const alpha=ease((t-1.8)/0.5);
     ctx.save();
+    ctx.globalAlpha=alpha;
 
-    ctx.globalAlpha = glow * (1 - ease((t - 3.0) / 0.7));
-    ctx.shadowColor = "#ffffff";
-    ctx.shadowBlur = 25;
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 4;
+    const path=new Path2D();
+    for(let yy=0;yy<ROWS;yy++){
+      for(let xx=0;xx<COLS;xx++){
+        path.rect(x+xx*cell,y+yy*cell,cell,cell);
+      }
+    }
 
-    roundedRect(x - 2, y - 2, w + 4, h + 4, 27);
-    ctx.stroke();
+    ctx.shadowColor="rgba(165,198,192,0.45)";
+    ctx.shadowBlur=cell*0.3;
+    ctx.fillStyle="#a5c6c0";
+    ctx.fill(path);
 
-    ctx.restore();
-  }
-
-  // CLEAR!
-  if (clearText > 0) {
-    ctx.save();
-
-    ctx.globalAlpha = clearText;
-    ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = "#ffffff";
-    ctx.shadowBlur = 18;
-    ctx.font = "bold 38px system-ui";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    ctx.fillText(
-      "CLEAR!",
-      width / 2,
-      y + h + 55
+    const gradient=ctx.createLinearGradient(
+      x,y,x+COLS*cell,y+ROWS*cell
     );
+    gradient.addColorStop(0,"#c9ded8");
+    gradient.addColorStop(0.5,"#a5c6c0");
+    gradient.addColorStop(1,"#789d99");
+
+    ctx.shadowBlur=0;
+    ctx.fillStyle=gradient;
+    ctx.fill(path);
+
+    // 外周だけを描く
+    ctx.strokeStyle="rgba(255,255,255,0.45)";
+    ctx.lineWidth=cell*0.035;
+    ctx.stroke(path);
 
     ctx.restore();
-  }
-
-  if (t < 4.5) {
-    animationId = requestAnimationFrame(animate);
-  } else {
-    animationId = null;
   }
 }
 
-document.getElementById("replay").addEventListener("click", play);
+function play(){
+  if(animationId)cancelAnimationFrame(animationId);
+  startTime=performance.now();
+  animationId=requestAnimationFrame(animate);
+}
 
-window.addEventListener("resize", resize);
+function animate(now){
+  const t=(now-startTime)/1000;
+  ctx.clearRect(0,0,width,height);
 
+  const appear=ease((t-0.2)/0.7);
+  const seamFade=1-ease((t-1.3)/0.7);
+  const glow=ease((t-1.8)/0.7);
+  const textAlpha=ease((t-2.5)/0.6);
+
+  const baseW=width*0.82;
+  const cell=baseW/COLS;
+  const baseH=cell*ROWS;
+
+  let bounce=1;
+  if(t>2.0&&t<2.9){
+    const bt=(t-2.0)/0.9;
+    bounce=1+Math.sin(bt*Math.PI)*0.09*(1-bt);
+  }
+
+  const scale=(0.65+appear*0.35)*bounce;
+  const w=baseW*scale;
+  const h=baseH*scale;
+  const size=cell*scale;
+  const x=(width-w)/2;
+  const y=height*0.37-h/2;
+
+  if(pieces.length){
+    ctx.save();
+    ctx.globalAlpha=appear;
+    drawBoard(x,y,size,t,seamFade);
+    ctx.restore();
+  }
+
+  if(glow>0){
+    ctx.save();
+    ctx.globalAlpha=glow*0.65;
+    const radius=baseW*0.75;
+    const g=ctx.createRadialGradient(
+      width/2,height*0.4,10,
+      width/2,height*0.4,radius
+    );
+    g.addColorStop(0,"rgba(165,198,192,0.22)");
+    g.addColorStop(1,"rgba(165,198,192,0)");
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,width,height);
+    ctx.restore();
+  }
+
+  if(textAlpha>0){
+    ctx.save();
+    ctx.globalAlpha=textAlpha;
+    ctx.fillStyle="#f5f5ee";
+    ctx.textAlign="center";
+    ctx.font="700 "+Math.max(28,width*0.075)+"px system-ui";
+    ctx.shadowColor="rgba(165,198,192,0.8)";
+    ctx.shadowBlur=22;
+    ctx.fillText("CLEAR!",width/2,y+h+55);
+    ctx.restore();
+  }
+
+  if(t<4.5){
+    animationId=requestAnimationFrame(animate);
+  }else{
+    animationId=null;
+  }
+}
+
+document.getElementById("replay").addEventListener("click",play);
+document.getElementById("back").addEventListener("click",()=>{
+  location.href="index.html";
+});
+window.addEventListener("resize",resize);
 resize();
 </script>
-
 </body>
 </html>
