@@ -106,110 +106,133 @@ function getCells(){
   }
   return result;
 }
+function adjustColor(hex, amount){
+  const num=parseInt(hex.replace("#",""),16);
+  const r=Math.max(0,Math.min(255,(num>>16)+amount));
+  const g=Math.max(0,Math.min(255,((num>>8)&255)+amount));
+  const b=Math.max(0,Math.min(255,(num&255)+amount));
+  return `rgb(${r},${g},${b})`;
+}
 
-function drawBoard(x,y,cell,t,seamFade){
-  const cells=getCells();
-  const colorProgress=ease((t-1.1)/1.0);
-  const finalColor="#a5c6c0";
+function drawCushionCell(x,y,size,color,seamFade){
+  const protrude=size*0.3;
+  const seam=size*0.02;
+  const radius=size*0.4;
 
-  // 最初は実際のピースの色で描画
-  // 時間とともに全体がひとつの色へまとまる
-  for(const c of cells){
-    const px=x+c.x*cell;
-    const py=y+c.y*cell;
-    const gap=cell*0.045;
-    const r=cell*0.25;
+  const px=x-protrude;
+  const py=y-protrude;
+  const w=size+protrude-seam;
+  const h=size+protrude-seam;
 
-    const fill=colorMix(c.color,finalColor,colorProgress);
+  ctx.save();
 
-    ctx.save();
-    ctx.shadowColor="rgba(0,0,0,0.18)";
-    ctx.shadowBlur=cell*0.13;
-    ctx.shadowOffsetX=cell*0.05;
-    ctx.shadowOffsetY=cell*0.06;
+  // 右下に厚みのある影
+  ctx.shadowColor="rgba(70,75,85,0.22)";
+  ctx.shadowBlur=size*0.16;
+  ctx.shadowOffsetX=size*0.07;
+  ctx.shadowOffsetY=size*0.07;
 
-    roundedRect(
-      px+gap,py+gap,
-      cell-gap*2,cell-gap*2,r
-    );
-    ctx.fillStyle=fill;
-    ctx.fill();
-    ctx.restore();
-  }
+  // 左上から右下への立体グラデーション
+  const gradient=ctx.createLinearGradient(
+    px,py,px+w,py+h
+  );
 
-  // ピース同士の境界線を描き、徐々に消す
-  if(seamFade>0){
-    const owner=Array.from({length:ROWS},()=>Array(COLS).fill(-1));
+  gradient.addColorStop(0,adjustColor(color,30));
+  gradient.addColorStop(0.5,color);
+  gradient.addColorStop(1,adjustColor(color,-18));
 
-    for(const c of cells){
-      if(c.x>=0&&c.x<COLS&&c.y>=0&&c.y<ROWS){
-        owner[c.y][c.x]=c.pieceId;
-      }
-    }
+  ctx.beginPath();
+  ctx.roundRect(px,py,w,h,radius);
+  ctx.fillStyle=gradient;
+  ctx.fill();
 
-    ctx.save();
-    ctx.globalAlpha=seamFade*0.45;
-    ctx.strokeStyle="#59616a";
-    ctx.lineWidth=Math.max(1,cell*0.035);
+  // クッション同士の境界
+  ctx.shadowColor="transparent";
+  ctx.shadowBlur=0;
+  ctx.shadowOffsetX=0;
+  ctx.shadowOffsetY=0;
 
-    for(let yy=0;yy<ROWS;yy++){
-      for(let xx=0;xx<COLS;xx++){
-        if(owner[yy][xx]<0)continue;
+  ctx.strokeStyle=`rgba(90,85,80,${0.13*seamFade})`;
+  ctx.lineWidth=Math.max(0.7,size*0.025);
+  ctx.stroke();
 
-        if(xx<COLS-1&&owner[yy][xx]!==owner[yy][xx+1]){
-          ctx.beginPath();
-          ctx.moveTo(x+(xx+1)*cell,y+yy*cell);
-          ctx.lineTo(x+(xx+1)*cell,y+(yy+1)*cell);
-          ctx.stroke();
-        }
+  // 左上の柔らかい光沢
+  ctx.strokeStyle=`rgba(255,255,255,${0.42*(0.25+0.75*seamFade)})`;
+  ctx.lineWidth=Math.max(1,size*0.035);
+  ctx.lineCap="round";
 
-        if(yy<ROWS-1&&owner[yy][xx]!==owner[yy+1][xx]){
-          ctx.beginPath();
-          ctx.moveTo(x+xx*cell,y+(yy+1)*cell);
-          ctx.lineTo(x+(xx+1)*cell,y+(yy+1)*cell);
-          ctx.stroke();
-        }
-      }
-    }
-    ctx.restore();
-  }
+  ctx.beginPath();
+  ctx.moveTo(px+radius,py+2);
+  ctx.lineTo(px+w-radius,py+2);
+  ctx.moveTo(px+2,py+radius);
+  ctx.lineTo(px+2,py+h-radius);
+  ctx.stroke();
 
-  // 境界が消えた後の、ひとつにつながったクッション
-  if(t>1.8){
-    const alpha=ease((t-1.8)/0.5);
-    ctx.save();
-    ctx.globalAlpha=alpha;
+  ctx.restore();
+}
+function adjustColor(hex, amount){
+  const num=parseInt(hex.replace("#",""),16);
+  const r=Math.max(0,Math.min(255,(num>>16)+amount));
+  const g=Math.max(0,Math.min(255,((num>>8)&255)+amount));
+  const b=Math.max(0,Math.min(255,(num&255)+amount));
+  return `rgb(${r},${g},${b})`;
+}
 
-    const path=new Path2D();
-    for(let yy=0;yy<ROWS;yy++){
-      for(let xx=0;xx<COLS;xx++){
-        path.rect(x+xx*cell,y+yy*cell,cell,cell);
-      }
-    }
+function drawCushionCell(x,y,size,color,seamFade){
+  const protrude=size*0.3;
+  const seam=size*0.02;
+  const radius=size*0.4;
 
-    ctx.shadowColor="rgba(165,198,192,0.45)";
-    ctx.shadowBlur=cell*0.3;
-    ctx.fillStyle="#a5c6c0";
-    ctx.fill(path);
+  const px=x-protrude;
+  const py=y-protrude;
+  const w=size+protrude-seam;
+  const h=size+protrude-seam;
 
-    const gradient=ctx.createLinearGradient(
-      x,y,x+COLS*cell,y+ROWS*cell
-    );
-    gradient.addColorStop(0,"#c9ded8");
-    gradient.addColorStop(0.5,"#a5c6c0");
-    gradient.addColorStop(1,"#789d99");
+  ctx.save();
 
-    ctx.shadowBlur=0;
-    ctx.fillStyle=gradient;
-    ctx.fill(path);
+  // 右下に厚みのある影
+  ctx.shadowColor="rgba(70,75,85,0.22)";
+  ctx.shadowBlur=size*0.16;
+  ctx.shadowOffsetX=size*0.07;
+  ctx.shadowOffsetY=size*0.07;
 
-    // 外周だけを描く
-    ctx.strokeStyle="rgba(255,255,255,0.45)";
-    ctx.lineWidth=cell*0.035;
-    ctx.stroke(path);
+  // 左上から右下への立体グラデーション
+  const gradient=ctx.createLinearGradient(
+    px,py,px+w,py+h
+  );
 
-    ctx.restore();
-  }
+  gradient.addColorStop(0,adjustColor(color,30));
+  gradient.addColorStop(0.5,color);
+  gradient.addColorStop(1,adjustColor(color,-18));
+
+  ctx.beginPath();
+  ctx.roundRect(px,py,w,h,radius);
+  ctx.fillStyle=gradient;
+  ctx.fill();
+
+  // クッション同士の境界
+  ctx.shadowColor="transparent";
+  ctx.shadowBlur=0;
+  ctx.shadowOffsetX=0;
+  ctx.shadowOffsetY=0;
+
+  ctx.strokeStyle=`rgba(90,85,80,${0.13*seamFade})`;
+  ctx.lineWidth=Math.max(0.7,size*0.025);
+  ctx.stroke();
+
+  // 左上の柔らかい光沢
+  ctx.strokeStyle=`rgba(255,255,255,${0.42*(0.25+0.75*seamFade)})`;
+  ctx.lineWidth=Math.max(1,size*0.035);
+  ctx.lineCap="round";
+
+  ctx.beginPath();
+  ctx.moveTo(px+radius,py+2);
+  ctx.lineTo(px+w-radius,py+2);
+  ctx.moveTo(px+2,py+radius);
+  ctx.lineTo(px+2,py+h-radius);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 function play(){
