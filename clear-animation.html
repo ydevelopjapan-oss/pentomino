@@ -73,6 +73,36 @@ let animationId = null;
 
 const color = "#a5c6c0";
 
+// 6×10の盤面を埋める12ピースの配置
+// 各座標は [横, 縦]
+const solution = [
+  { name:"F", cells:[[0,0],[0,1],[1,1],[2,1],[1,2]] },
+  { name:"I", cells:[[1,0],[2,0],[3,0],[4,0],[5,0]] },
+  { name:"L", cells:[[0,2],[0,3],[1,3],[2,3],[3,3]] },
+  { name:"N", cells:[[3,1],[4,1],[5,1],[2,2],[3,2]] },
+  { name:"P", cells:[[0,4],[1,4],[2,4],[0,5],[1,5]] },
+  { name:"W", cells:[[4,3],[3,4],[4,4],[2,5],[3,5]] },
+  { name:"T", cells:[[5,3],[5,4],[4,5],[5,5],[6,5]] },
+  { name:"Y", cells:[[4,2],[5,2],[6,2],[7,2],[6,3]] },
+  { name:"X", cells:[[7,3],[6,4],[7,4],[8,4],[7,5]] },
+  { name:"U", cells:[[8,3],[9,3],[9,4],[8,5],[9,5]] },
+  { name:"V", cells:[[7,0],[8,0],[9,0],[9,1],[9,2]] },
+  { name:"Z", cells:[[6,0],[6,1],[7,1],[8,1],[8,2]] }
+];
+
+// 各マスがどのピースに属するか記録
+const owner = Array.from(
+  { length: ROWS },
+  () => Array(COLS).fill(-1)
+);
+
+solution.forEach((piece, id) => {
+  piece.cells.forEach(([x,y]) => {
+    owner[y][x] = id;
+  });
+});
+
+
 // 角を丸くした長方形
 function roundedRect(x, y, w, h, r) {
   ctx.beginPath();
