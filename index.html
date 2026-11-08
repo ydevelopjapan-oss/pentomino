@@ -209,7 +209,7 @@ function resize() {
   const trayRows=Math.ceil(pieces.length/trayCols);
   const rowStep=5*mini+(isMobile?25:30);
   layoutHeight=trayY+trayRows*rowStep+(isMobile?14:24);
-  boardX=(layoutWidth-COLS*cell)/2+6;
+  boardX=(layoutWidth-COLS*cell)/2+4;
   canvas.width=Math.round(layoutWidth*dpr);canvas.height=Math.round(layoutHeight*dpr);
   canvas.style.width=layoutWidth+'px';canvas.style.height=layoutHeight+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);draw();
