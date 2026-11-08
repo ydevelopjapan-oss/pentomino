@@ -206,29 +206,38 @@ function animate(now) {
 
   ctx.restore();
 
-  // 内部の境界線
-  // 時間とともに完全に消える
+ 
+  // 12ピースそれぞれの境界線
   if (seamFade > 0.01) {
     ctx.save();
-
     ctx.globalAlpha = seamFade * 0.65;
     ctx.strokeStyle = "#668d88";
     ctx.lineWidth = 1.5;
 
-    for (let i = 1; i < COLS; i++) {
-      const px = x + w * i / COLS;
-      ctx.beginPath();
-      ctx.moveTo(px, y + 4);
-      ctx.lineTo(px, y + h - 4);
-      ctx.stroke();
-    }
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const id = owner[y][x];
 
-    for (let i = 1; i < ROWS; i++) {
-      const py = y + h * i / ROWS;
-      ctx.beginPath();
-      ctx.moveTo(x + 4, py);
-      ctx.lineTo(x + w - 4, py);
-      ctx.stroke();
+        // 右隣が別ピース
+        if (x < COLS - 1 && owner[y][x+1] !== id) {
+          const px = (width-w)/2 + (x+1)*w/COLS;
+          const py = height*0.40 - h/2 + y*h/ROWS;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px, py+h/ROWS);
+          ctx.stroke();
+        }
+
+        // 下隣が別ピース
+        if (y < ROWS - 1 && owner[y+1][x] !== id) {
+          const px = (width-w)/2 + x*w/COLS;
+          const py = height*0.40 - h/2 + (y+1)*h/ROWS;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px+w/COLS, py);
+          ctx.stroke();
+        }
+      }
     }
 
     ctx.restore();
