@@ -107,13 +107,14 @@ function getCells(){
   return result;
 }
 
+
 function drawBoard(x,y,cell,t,seamFade){
   const cells=getCells();
   const colorProgress=ease((t-1.1)/1.0);
-  const finalColor="#a5c6c0";
+  const finalColor="#f2d58a";
 
   // 最初は実際のピースの色で描画
-  // 時間とともに全体がひとつの色へまとまる
+  // 時間とともに暖かいクリーム色へまとまる
   for(const c of cells){
     const px=x+c.x*cell;
     const py=y+c.y*cell;
@@ -174,44 +175,76 @@ function drawBoard(x,y,cell,t,seamFade){
     ctx.restore();
   }
 
-  // 境界が消えた後の、ひとつにつながったクッション
+  // 完成した長方形を、ひとつの大きなクッションにする
   if(t>1.8){
     const alpha=ease((t-1.8)/0.5);
+    const w=COLS*cell;
+    const h=ROWS*cell;
+    const radius=cell*0.48;
+    const depth=cell*0.13;
+
     ctx.save();
     ctx.globalAlpha=alpha;
 
-    const path=new Path2D();
-    for(let yy=0;yy<ROWS;yy++){
-      for(let xx=0;xx<COLS;xx++){
-        path.rect(x+xx*cell,y+yy*cell,cell,cell);
-      }
-    }
+    // 下側の厚み
+    ctx.save();
+    ctx.shadowColor="rgba(100,75,35,0.25)";
+    ctx.shadowBlur=cell*0.28;
+    ctx.shadowOffsetX=cell*0.04;
+    ctx.shadowOffsetY=cell*0.13;
 
-    ctx.shadowColor="rgba(165,198,192,0.45)";
-    ctx.shadowBlur=cell*0.3;
-    ctx.fillStyle="#a5c6c0";
-    ctx.fill(path);
+    roundedRect(x,y+depth,w,h,radius);
+    ctx.fillStyle="#c69e58";
+    ctx.fill();
+    ctx.restore();
+
+    // クッション本体
+    ctx.save();
+    ctx.shadowColor="rgba(120,85,35,0.22)";
+    ctx.shadowBlur=cell*0.18;
+    ctx.shadowOffsetX=cell*0.03;
+    ctx.shadowOffsetY=cell*0.07;
+
+    roundedRect(x,y,w,h,radius);
 
     const gradient=ctx.createLinearGradient(
-      x,y,x+COLS*cell,y+ROWS*cell
+      x,y,x+w,y+h
     );
-    gradient.addColorStop(0,"#c9ded8");
-    gradient.addColorStop(0.5,"#a5c6c0");
-    gradient.addColorStop(1,"#789d99");
+    gradient.addColorStop(0,"#fff1c4");
+    gradient.addColorStop(0.48,"#f4dc9b");
+    gradient.addColorStop(1,"#dfbd73");
 
-    ctx.shadowBlur=0;
     ctx.fillStyle=gradient;
-    ctx.fill(path);
+    ctx.fill();
+    ctx.restore();
 
-    // 外周だけを描く
-    ctx.strokeStyle="rgba(255,255,255,0.45)";
-    ctx.lineWidth=cell*0.035;
-    ctx.stroke(path);
+    // 外周の柔らかな縁取り
+    roundedRect(
+      x+cell*0.025,
+      y+cell*0.025,
+      w-cell*0.05,
+      h-cell*0.05,
+      radius-cell*0.025
+    );
+    ctx.strokeStyle="rgba(255,248,220,0.75)";
+    ctx.lineWidth=cell*0.045;
+    ctx.stroke();
+
+    // 表面の控えめな光沢
+    roundedRect(
+      x+cell*0.09,
+      y+cell*0.09,
+      w-cell*0.18,
+      h-cell*0.18,
+      radius-cell*0.09
+    );
+    ctx.strokeStyle="rgba(255,255,255,0.22)";
+    ctx.lineWidth=cell*0.025;
+    ctx.stroke();
 
     ctx.restore();
   }
 }
-
 function play(){
   if(animationId)cancelAnimationFrame(animationId);
   startTime=performance.now();
