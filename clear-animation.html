@@ -172,109 +172,41 @@ function drawCushionCell(x,y,size,color,seamFade){
 }
 function drawBoard(x,y,cell,t,seamFade){
   const cells=getCells();
+
   const colorProgress=ease((t-1.1)/1.0);
   const finalColor="#a5c6c0";
 
-  // 最初は実際のピースの色で描画
-  // 時間とともに全体がひとつの色へまとまる
-  for(const c of cells){
+  // 左上から右下の順に描画
+  const drawOrder=[...cells].sort((a,b)=>{
+    const da=a.x+a.y;
+    const db=b.x+b.y;
+
+    if(da!==db)return da-db;
+    if(a.y!==b.y)return a.y-b.y;
+    return a.x-b.x;
+  });
+
+  for(const c of drawOrder){
     const px=x+c.x*cell;
     const py=y+c.y*cell;
-    const gap=cell*0.045;
-    const r=cell*0.25;
 
-    const fill=colorMix(c.color,finalColor,colorProgress);
-
-    ctx.save();
-    ctx.shadowColor="rgba(0,0,0,0.18)";
-    ctx.shadowBlur=cell*0.13;
-    ctx.shadowOffsetX=cell*0.05;
-    ctx.shadowOffsetY=cell*0.06;
-
-    roundedRect(
-      px+gap,py+gap,
-      cell-gap*2,cell-gap*2,r
+    // ピースの色から完成色へ徐々に変化
+    const fill=colorMix(
+      c.color,
+      finalColor,
+      colorProgress
     );
-    ctx.fillStyle=fill;
-    ctx.fill();
-    ctx.restore();
-  }
 
-  // ピース同士の境界線を描き、徐々に消す
-  if(seamFade>0){
-    const owner=Array.from({length:ROWS},()=>Array(COLS).fill(-1));
-
-    for(const c of cells){
-      if(c.x>=0&&c.x<COLS&&c.y>=0&&c.y<ROWS){
-        owner[c.y][c.x]=c.pieceId;
-      }
-    }
-
-    ctx.save();
-    ctx.globalAlpha=seamFade*0.45;
-    ctx.strokeStyle="#59616a";
-    ctx.lineWidth=Math.max(1,cell*0.035);
-
-    for(let yy=0;yy<ROWS;yy++){
-      for(let xx=0;xx<COLS;xx++){
-        if(owner[yy][xx]<0)continue;
-
-        if(xx<COLS-1&&owner[yy][xx]!==owner[yy][xx+1]){
-          ctx.beginPath();
-          ctx.moveTo(x+(xx+1)*cell,y+yy*cell);
-          ctx.lineTo(x+(xx+1)*cell,y+(yy+1)*cell);
-          ctx.stroke();
-        }
-
-        if(yy<ROWS-1&&owner[yy][xx]!==owner[yy+1][xx]){
-          ctx.beginPath();
-          ctx.moveTo(x+xx*cell,y+(yy+1)*cell);
-          ctx.lineTo(x+(xx+1)*cell,y+(yy+1)*cell);
-          ctx.stroke();
-        }
-      }
-    }
-    ctx.restore();
-  }
-
-  // 境界が消えた後の、ひとつにつながったクッション
-  if(t>1.8){
-    const alpha=ease((t-1.8)/0.5);
-    ctx.save();
-    ctx.globalAlpha=alpha;
-
-    const path=new Path2D();
-    for(let yy=0;yy<ROWS;yy++){
-      for(let xx=0;xx<COLS;xx++){
-        path.rect(x+xx*cell,y+yy*cell,cell,cell);
-      }
-    }
-
-    ctx.shadowColor="rgba(165,198,192,0.45)";
-    ctx.shadowBlur=cell*0.3;
-    ctx.fillStyle="#a5c6c0";
-    ctx.fill(path);
-
-    const gradient=ctx.createLinearGradient(
-      x,y,x+COLS*cell,y+ROWS*cell
+    // 本編と同じクッションを描画
+    drawCushionCell(
+      px,
+      py,
+      cell,
+      fill,
+      seamFade
     );
-    gradient.addColorStop(0,"#c9ded8");
-    gradient.addColorStop(0.5,"#a5c6c0");
-    gradient.addColorStop(1,"#789d99");
-
-    ctx.shadowBlur=0;
-    ctx.fillStyle=gradient;
-    ctx.fill(path);
-
-    // 外周だけを描く
-    ctx.strokeStyle="rgba(255,255,255,0.45)";
-    ctx.lineWidth=cell*0.035;
-    ctx.stroke(path);
-
-    ctx.restore();
   }
 }
-
 function play(){
   if(animationId)cancelAnimationFrame(animationId);
   startTime=performance.now();
