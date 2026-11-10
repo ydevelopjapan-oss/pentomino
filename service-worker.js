@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'pentomino-v1';
+const CACHE_NAME = 'pentomino-v2';
 
 const FILES_TO_CACHE = [
   './',
