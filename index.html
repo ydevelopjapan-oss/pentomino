@@ -1069,16 +1069,15 @@ resize();
 </script>
 
 <script>
-// Service Workerを登録
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const registration =
         await navigator.serviceWorker.register('./service-worker.js');
 
-      console.log('Service Worker登録成功', registration);
+      console.log('Service Worker登録成功');
 
-      // 更新のお知らせを表示
+      // お知らせ表示
       function showUpdateNotice() {
         if (document.getElementById('update-notice')) return;
 
@@ -1132,31 +1131,47 @@ if ('serviceWorker' in navigator) {
         document.body.appendChild(notice);
       }
 
-      // すでに新しい版が待機している場合
-      if (registration.waiting) {
-        showUpdateNotice();
-      }
+      // 新しいService Workerの状態を確認
+      function checkInstalling() {
+        const worker = registration.installing;
+        if (!worker) return;
 
-      // 新しい版のダウンロードを検知
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener('statechange', () => {
+        function checkState() {
           if (
-            newWorker.state === 'installed' &&
+            worker.state === 'installed' &&
             navigator.serviceWorker.controller
           ) {
             showUpdateNotice();
           }
-        });
-      });
+        }
 
-      // サーバーに新しい版がないか確認
-      registration.update();
+        worker.addEventListener('statechange', checkState);
+        checkState();
+      }
+
+      // 更新イベントを監視
+      registration.addEventListener('updatefound', checkInstalling);
+
+      // すでに待機中の更新がある場合
+      if (registration.waiting && navigator.serviceWorker.controller) {
+        showUpdateNotice();
+      }
+
+      // すでにインストール処理が始まっている場合
+      checkInstalling();
+
+      // サーバーに更新を確認
+      await registration.update();
+
+      // 更新確認後、もう一度状態を確認
+      checkInstalling();
+
+      if (registration.waiting && navigator.serviceWorker.controller) {
+        showUpdateNotice();
+      }
 
     } catch (error) {
-      console.error('Service Worker登録失敗', error);
+      console.error('Service Worker処理エラー', error);
     }
   });
 }
