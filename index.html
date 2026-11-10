@@ -1067,19 +1067,100 @@ window.addEventListener('resize',resize);
 resize();
 })();
 </script>
+
 <script>
 // Service Workerを登録
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(registration => {
-        console.log('Service Worker登録成功', registration);
-      })
-      .catch(error => {
-        console.error('Service Worker登録失敗', error);
+  window.addEventListener('load', async () => {
+    try {
+      const registration =
+        await navigator.serviceWorker.register('./service-worker.js');
+
+      console.log('Service Worker登録成功', registration);
+
+      // 更新のお知らせを表示
+      function showUpdateNotice() {
+        if (document.getElementById('update-notice')) return;
+
+        const notice = document.createElement('div');
+        notice.id = 'update-notice';
+
+        notice.style.cssText = `
+          position:fixed;
+          left:12px;
+          right:12px;
+          bottom:16px;
+          z-index:99999;
+          max-width:480px;
+          margin:auto;
+          padding:14px 16px;
+          border-radius:16px;
+          background:#fffefa;
+          border:1px solid #e2ded5;
+          box-shadow:0 4px 18px #554b3830;
+          color:#59616a;
+          font-size:13px;
+          line-height:1.6;
+          display:flex;
+          align-items:center;
+          gap:12px;
+        `;
+
+        const message = document.createElement('div');
+        message.style.flex = '1';
+        message.innerHTML = `
+          <strong>新しいバージョンがあります</strong><br>
+          ゲームを終了して、もう一度開くと更新されます。
+        `;
+
+        const close = document.createElement('button');
+        close.textContent = '閉じる';
+        close.style.cssText = `
+          border:1px solid #e2ded5;
+          border-radius:12px;
+          background:#f7f4ec;
+          color:#777a7c;
+          padding:8px 12px;
+          font-size:12px;
+          min-width:auto;
+          min-height:auto;
+        `;
+
+        close.addEventListener('click', () => notice.remove());
+
+        notice.append(message, close);
+        document.body.appendChild(notice);
+      }
+
+      // すでに新しい版が待機している場合
+      if (registration.waiting) {
+        showUpdateNotice();
+      }
+
+      // 新しい版のダウンロードを検知
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+          if (
+            newWorker.state === 'installed' &&
+            navigator.serviceWorker.controller
+          ) {
+            showUpdateNotice();
+          }
+        });
       });
+
+      // サーバーに新しい版がないか確認
+      registration.update();
+
+    } catch (error) {
+      console.error('Service Worker登録失敗', error);
+    }
   });
 }
 </script>
+
 </body>
 </html>
