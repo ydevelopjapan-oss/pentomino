@@ -36,22 +36,9 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 保存済みファイルを優先して読み込む
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match('./index.html').then(response => {
-        return response || fetch(event.request);
-      })
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
+key))
+      );
     })
   );
 });
+
