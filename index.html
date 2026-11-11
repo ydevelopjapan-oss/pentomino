@@ -1065,114 +1065,158 @@ resize();
 })();
 </script>
 
+
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
+
+    // 診断パネル
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+      position:fixed;
+      left:10px;
+      right:10px;
+      bottom:10px;
+      z-index:999999;
+      padding:14px;
+      border-radius:12px;
+      background:#fffefa;
+      border:1px solid #d8d8d4;
+      box-shadow:0 3px 12px #0002;
+      color:#59616a;
+      font-size:12px;
+      line-height:1.7;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+    `;
+    document.body.appendChild(panel);
+
+    let registration = null;
+    let watchedWorker = null;
+
+    function refreshStatus(message = '') {
+      if (!registration) {
+        panel.textContent = '登録処理中...\n' + message;
+        return;
+      }
+
+      const controller = navigator.serviceWorker.controller;
+
+      panel.textContent =
+        '【Service Worker診断】\n' +
+        '登録：成功\n' +
+        '現在の制御：' +
+          (controller ? 'あり' : 'なし') + '\n' +
+        '有効なWorker：' +
+          (registration.active?.state || 'なし') + '\n' +
+        'インストール中：' +
+          (registration.installing?.state || 'なし') + '\n' +
+        '待機中：' +
+          (registration.waiting ? 'あり' : 'なし') + '\n' +
+        '制御WorkerのURL：' +
+          (controller?.scriptURL || 'なし') + '\n' +
+        '確認：' + message;
+    }
+
+    function showUpdateNotice() {
+      if (document.getElementById('update-notice')) return;
+
+      const notice = document.createElement('div');
+      notice.id = 'update-notice';
+      notice.style.cssText = `
+        position:fixed;
+        left:12px;
+        right:12px;
+        bottom:16px;
+        z-index:999998;
+        padding:14px 16px;
+        border-radius:16px;
+        background:#fffefa;
+        border:1px solid #e2ded5;
+        box-shadow:0 4px 18px #554b3830;
+        color:#59616a;
+        font-size:13px;
+        line-height:1.6;
+      `;
+
+      notice.textContent =
+        '新しいバージョンがあります。ゲームを終了して、もう一度開くと更新されます。';
+
+      document.body.appendChild(notice);
+    }
+
+    function checkInstalling() {
+      const worker = registration.installing;
+
+      if (!worker || worker === watchedWorker) return;
+
+      watchedWorker = worker;
+
+      worker.addEventListener('statechange', () => {
+        refreshStatus('Workerの状態が変化しました');
+
+        if (
+          worker.state === 'installed' &&
+          navigator.serviceWorker.controller
+        ) {
+          showUpdateNotice();
+        }
+      });
+
+      refreshStatus('新しいWorkerを検出');
+    }
+
     try {
-      const registration =
+      registration =
         await navigator.serviceWorker.register('./service-worker.js');
 
-      console.log('Service Worker登録成功');
+      refreshStatus('登録成功');
 
-      // お知らせ表示
-      function showUpdateNotice() {
-        if (document.getElementById('update-notice')) return;
+      registration.addEventListener('updatefound', () => {
+        checkInstalling();
+        refreshStatus('更新を検出');
+      });
 
-        const notice = document.createElement('div');
-        notice.id = 'update-notice';
-
-        notice.style.cssText = `
-          position:fixed;
-          left:12px;
-          right:12px;
-          bottom:16px;
-          z-index:99999;
-          max-width:480px;
-          margin:auto;
-          padding:14px 16px;
-          border-radius:16px;
-          background:#fffefa;
-          border:1px solid #e2ded5;
-          box-shadow:0 4px 18px #554b3830;
-          color:#59616a;
-          font-size:13px;
-          line-height:1.6;
-          display:flex;
-          align-items:center;
-          gap:12px;
-        `;
-
-        const message = document.createElement('div');
-        message.style.flex = '1';
-        message.innerHTML = `
-          <strong>新しいバージョンがあります</strong><br>
-          ゲームを終了して、もう一度開くと更新されます。
-        `;
-
-        const close = document.createElement('button');
-        close.textContent = '閉じる';
-        close.style.cssText = `
-          border:1px solid #e2ded5;
-          border-radius:12px;
-          background:#f7f4ec;
-          color:#777a7c;
-          padding:8px 12px;
-          font-size:12px;
-          min-width:auto;
-          min-height:auto;
-        `;
-
-        close.addEventListener('click', () => notice.remove());
-
-        notice.append(message, close);
-        document.body.appendChild(notice);
-      }
-
-      // 新しいService Workerの状態を確認
-      function checkInstalling() {
-        const worker = registration.installing;
-        if (!worker) return;
-
-        function checkState() {
-          if (
-            worker.state === 'installed' &&
-            navigator.serviceWorker.controller
-          ) {
-            showUpdateNotice();
-          }
+      navigator.serviceWorker.addEventListener(
+        'controllerchange',
+        () => {
+          refreshStatus('制御Workerが切り替わりました');
         }
+      );
 
-        worker.addEventListener('statechange', checkState);
-        checkState();
-      }
-
-      // 更新イベントを監視
-      registration.addEventListener('updatefound', checkInstalling);
-
-      // すでに待機中の更新がある場合
-      if (registration.waiting && navigator.serviceWorker.controller) {
+      if (
+        registration.waiting &&
+        navigator.serviceWorker.controller
+      ) {
         showUpdateNotice();
       }
 
-      // すでにインストール処理が始まっている場合
       checkInstalling();
 
-      // サーバーに更新を確認
+      refreshStatus('更新確認中');
+
       await registration.update();
 
-      // 更新確認後、もう一度状態を確認
       checkInstalling();
+      refreshStatus('更新確認完了');
 
-      if (registration.waiting && navigator.serviceWorker.controller) {
+      if (
+        registration.waiting &&
+        navigator.serviceWorker.controller
+      ) {
         showUpdateNotice();
       }
 
     } catch (error) {
-      console.error('Service Worker処理エラー', error);
+      panel.textContent =
+        '【Service Worker診断】\n' +
+        'エラー：' + error.message;
     }
+
   });
 }
 </script>
+
 
 </body>
 </html>
