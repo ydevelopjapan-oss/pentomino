@@ -1062,6 +1062,10 @@ loadGameData();
 
 window.addEventListener('resize',resize);
 resize();
+
+// 更新前にゲームデータを保存できるようにする
+window.savePentominoBeforeUpdate = saveGameData;
+
 })();
 </script>
 
@@ -1076,11 +1080,17 @@ if ('serviceWorker' in navigator) {
 
       console.log('Service Worker登録成功');
 
-      function showUpdateNotice() {
+      let dismissedWorker = null;
+      let applyingUpdate = false;
+
+      // 更新通知を表示
+      function showUpdateNotice(worker) {
+        if (!worker || dismissedWorker === worker) return;
         if (document.getElementById('update-notice')) return;
 
         const notice = document.createElement('div');
         notice.id = 'update-notice';
+
         notice.style.cssText = `
           position:fixed;
           left:12px;
@@ -1097,12 +1107,70 @@ if ('serviceWorker' in navigator) {
           line-height:1.6;
         `;
 
-        notice.textContent =
-          '新しいバージョンがあります。ゲームを終了して、もう一度開くと更新されます。';
+        const message = document.createElement('div');
+        message.textContent = '新しいバージョンがあります。更新しますか？';
+
+        const buttons = document.createElement('div');
+        buttons.style.cssText = `
+          display:flex;
+          justify-content:flex-end;
+          gap:8px;
+          margin-top:10px;
+        `;
+
+        const laterButton = document.createElement('button');
+        laterButton.textContent = 'あとで';
+
+        const updateButton = document.createElement('button');
+        updateButton.textContent = '更新する';
+
+        laterButton.addEventListener('click', () => {
+          dismissedWorker = worker;
+          notice.remove();
+        });
+
+        updateButton.addEventListener('click', () => {
+          const waitingWorker = registration.waiting || worker;
+
+          if (!waitingWorker) return;
+
+          // 現在のゲームデータを保存
+          if (window.savePentominoBeforeUpdate) {
+            window.savePentominoBeforeUpdate();
+          }
+
+          applyingUpdate = true;
+
+          message.textContent = '更新しています…';
+          laterButton.disabled = true;
+          updateButton.disabled = true;
+
+          // 新しいService Workerに切り替えを指示
+          waitingWorker.postMessage({
+            type: 'SKIP_WAITING'
+          });
+        });
+
+        buttons.appendChild(laterButton);
+        buttons.appendChild(updateButton);
+
+        notice.appendChild(message);
+        notice.appendChild(buttons);
 
         document.body.appendChild(notice);
       }
 
+      // 待機中の更新があるか確認
+      function checkWaiting() {
+        if (
+          registration.waiting &&
+          navigator.serviceWorker.controller
+        ) {
+          showUpdateNotice(registration.waiting);
+        }
+      }
+
+      // インストール中のWorkerを監視
       function checkInstalling() {
         const worker = registration.installing;
         if (!worker) return;
@@ -1112,7 +1180,11 @@ if ('serviceWorker' in navigator) {
             worker.state === 'installed' &&
             navigator.serviceWorker.controller
           ) {
-            showUpdateNotice();
+            checkWaiting();
+
+            if (!registration.waiting) {
+              showUpdateNotice(worker);
+            }
           }
         }
 
@@ -1120,20 +1192,41 @@ if ('serviceWorker' in navigator) {
         checkState();
       }
 
+      // 更新が見つかったとき
       registration.addEventListener('updatefound', checkInstalling);
 
-      if (registration.waiting && navigator.serviceWorker.controller) {
-        showUpdateNotice();
-      }
+      // 更新が適用され、制御Workerが切り替わったとき
+      navigator.serviceWorker.addEventListener(
+        'controllerchange',
+        () => {
+          if (applyingUpdate) {
+            window.location.reload();
+          }
+        }
+      );
 
+      // 起動時に更新を確認
+      checkWaiting();
       checkInstalling();
-
       await registration.update();
       checkInstalling();
+      checkWaiting();
 
-      if (registration.waiting && navigator.serviceWorker.controller) {
-        showUpdateNotice();
+      // アプリに戻ってきたときに更新を確認
+      async function checkForUpdate() {
+        if (document.visibilityState !== 'visible') return;
+
+        try {
+          await registration.update();
+          checkInstalling();
+          checkWaiting();
+        } catch (error) {
+          console.log('更新確認をスキップしました', error);
+        }
       }
+
+      document.addEventListener('visibilitychange', checkForUpdate);
+      window.addEventListener('pageshow', checkForUpdate);
 
     } catch (error) {
       console.error('Service Worker処理エラー', error);
