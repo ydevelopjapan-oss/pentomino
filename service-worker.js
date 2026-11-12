@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'pentomino-v10';
+const CACHE_NAME = 'pentomino-v11';
 
 const FILES_TO_CACHE = [
   './',
@@ -20,7 +20,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// 古いキャッシュを整理
+// 古いキャッシュを整理して、新しいWorkerに切り替える
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -32,6 +32,8 @@ self.addEventListener('activate', event => {
           )
           .map(key => caches.delete(key))
       );
+    }).then(() => {
+      return self.clients.claim();
     })
   );
 });
@@ -67,4 +69,13 @@ self.addEventListener('fetch', event => {
       return response || fetch(event.request);
     })
   );
+});
+// アプリから更新指示を受け取ったときだけ切り替える
+self.addEventListener('message', event => {
+  if (
+    event.data &&
+    event.data.type === 'SKIP_WAITING'
+  ) {
+    self.skipWaiting();
+  }
 });
