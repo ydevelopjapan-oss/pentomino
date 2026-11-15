@@ -309,7 +309,6 @@ function startDrag(e,id,fromBoard){
         y:Math.max(0,Math.min(d.h-1,Math.floor((e.clientY-sy)/mini)))};
  }
  drag={id,before,grab, startX:e.clientX,startY:e.clientY,moved:false};
- render();
  const move=ev=>{
   if(!drag)return;
   if(Math.abs(ev.clientX-drag.startX)+Math.abs(ev.clientY-drag.startY)>5)drag.moved=true;
