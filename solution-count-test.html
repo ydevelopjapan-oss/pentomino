@@ -1,1 +1,427 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#f7f5ef">
+<title>ペントミノ・解答数実験</title>
+<style>
+:root{
+  color-scheme:light;
+  --ink:#59616a;
+  --muted:#8b9095;
+  --paper:#f7f5ef;
+  --line:#dedbd3;
+  --accent:#819b8b;
+  --danger:#c56f69;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;padding:16px 12px 28px;
+  background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+}
+main{max-width:760px;margin:0 auto}
+h1{font-size:20px;font-weight:700;margin:4px 0 5px}
+.lead{font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.6}
+.count-panel{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:#fffefa;border:1px solid var(--line);border-radius:16px;
+  padding:12px 16px;margin-bottom:14px;
+}
+.count-label{font-size:12px;color:var(--muted)}
+.count-number{font-size:30px;font-weight:750;letter-spacing:.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.count-unit{font-size:12px;margin-left:5px}
+.count-note{font-size:11px;color:var(--muted);text-align:right;max-width:120px;line-height:1.5}
+.count-panel.zero .count-number{color:var(--danger)}
+.count-panel.good .count-number{color:#668c75}
+.board-wrap{
+  width:100%;display:flex;justify-content:center;
+  padding:8px 0 10px;overflow:visible;
+}
+#board{
+  width:min(100%,600px);aspect-ratio:10/6;position:relative;
+  display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(6,1fr);
+  border:2px solid #b9b7b0;border-radius:7px;background:#eeece5;
+  touch-action:none;overflow:visible;
+}
+.board-cell{border:1px solid #d5d2ca;min-width:0;min-height:0}
+.board-piece{position:absolute;inset:0;pointer-events:none}
+.board-block{
+  position:absolute;border-radius:8px;
+  border:1px solid rgba(70,75,85,.13);
+  box-shadow:2px 3px 5px rgba(70,75,85,.16),inset 2px 2px 3px rgba(255,255,255,.42),inset -2px -2px 3px rgba(70,75,85,.10);
+}
+#tray-title{font-size:13px;font-weight:650;margin:14px 2px 9px}
+#tray{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px 7px;
+}
+.tray-slot{
+  height:94px;border:1px solid var(--line);border-radius:12px;
+  background:#fffefa;position:relative;display:flex;align-items:center;justify-content:center;
+  touch-action:none;user-select:none;
+}
+.tray-slot.selected{outline:2px solid #8aa391;outline-offset:1px}
+.tray-slot.placed-slot{background:#f0eee8;border-style:dashed}
+.piece-shape{position:relative;touch-action:none}
+.piece-block{
+  position:absolute;border-radius:7px;border:1px solid rgba(70,75,85,.13);
+  box-shadow:2px 3px 5px rgba(70,75,85,.15),inset 2px 2px 3px rgba(255,255,255,.4),inset -2px -2px 3px rgba(70,75,85,.10);
+}
+.piece-name{
+  position:absolute;left:6px;top:5px;font-size:11px;font-weight:700;color:#59616a;
+  pointer-events:none;opacity:.75
+}
+.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0 8px}
+button{
+  appearance:none;border:1px solid #d8d4ca;background:#fffefa;color:var(--ink);
+  border-radius:999px;padding:10px 16px;font-size:13px;font-weight:650;
+  box-shadow:0 2px 5px rgba(60,55,45,.07);touch-action:manipulation
+}
+button:disabled{opacity:.38}
+button.primary{background:#829b8b;color:white;border-color:#829b8b}
+.status{min-height:22px;text-align:center;font-size:12px;color:var(--muted);line-height:1.5}
+.help{
+  margin-top:16px;padding:12px 14px;background:#fffefa;border:1px solid var(--line);
+  border-radius:13px;font-size:11px;line-height:1.7;color:#777d82
+}
+.help strong{color:var(--ink)}
+#loading{padding:22px;text-align:center;font-size:13px;color:var(--muted)}
+.drag-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.88;filter:drop-shadow(2px 4px 5px #5554)}
+@media(min-width:600px){
+  body{padding-top:24px}
+  #tray{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .tray-slot{height:112px}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>ペントミノ・解答数実験</h1>
+  <p class="lead">ピースを盤面に置くと、その配置から完成できる解答数が表示されます。</p>
 
+  <section class="count-panel" id="countPanel">
+    <div>
+      <div class="count-label">現在の解答数</div>
+      <div><span class="count-number" id="countNumber">読み込み中</span><span class="count-unit">通り</span></div>
+    </div>
+    <div class="count-note" id="countNote">解答データを読み込んでいます</div>
+  </section>
+
+  <div id="loading">解答データを読み込んでいます…</div>
+  <div class="board-wrap"><div id="board" aria-label="10列6行の盤面"></div></div>
+  <div id="tray-title">ピース置き場</div>
+  <div id="tray"></div>
+
+  <div class="controls">
+    <button id="rotateBtn" disabled>↻ 回転</button>
+    <button id="flipBtn" disabled>↔ 反転</button>
+    <button id="undoBtn" disabled>↶ Undo</button>
+    <button id="resetBtn" disabled>最初から</button>
+  </div>
+  <div class="status" id="status">ピースを選択して、盤面へドラッグしてね。</div>
+
+  <div class="help">
+    <strong>操作方法</strong><br>
+    ・ピースを盤面へドラッグすると配置できます。<br>
+    ・盤面上のピースを置き場へ戻すこともできます。<br>
+    ・選択したピースは「回転」「反転」ができます。盤面上にあった場合は置き場に戻ります。<br>
+    ・Undoは配置・回転・反転・戻す操作を1つずつ取り消します。<br>
+    ・解答数が0通りになっても、自動では戻しません。Undoで自分で戻してください。<br>
+    ・解答数は、ピースの種類・位置・向きが一致する完成形だけを数えます。
+  </div>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+const COLS=10, ROWS=6;
+const definitions=[
+ ['F',[[1,0],[2,0],[0,1],[1,1],[1,2]],'#8fb9d2'],
+ ['I',[[0,0],[0,1],[0,2],[0,3],[0,4]],'#9bcdb8'],
+ ['L',[[0,0],[0,1],[0,2],[0,3],[1,3]],'#f0d27b'],
+ ['P',[[0,0],[1,0],[0,1],[1,1],[0,2]],'#efb58c'],
+ ['N',[[0,0],[0,1],[1,1],[1,2],[1,3]],'#b9a5d1'],
+ ['T',[[0,0],[1,0],[2,0],[1,1],[1,2]],'#e6a0aa'],
+ ['U',[[0,0],[2,0],[0,1],[1,1],[2,1]],'#80c8c1'],
+ ['V',[[0,0],[0,1],[0,2],[1,2],[2,2]],'#b8cb83'],
+ ['W',[[0,0],[0,1],[1,1],[1,2],[2,2]],'#a5a9d4'],
+ ['X',[[1,0],[0,1],[1,1],[2,1],[1,2]],'#df9b88'],
+ ['Y',[[0,0],[0,1],[0,2],[0,3],[1,1]],'#9fc6df'],
+ ['Z',[[0,0],[1,0],[1,1],[1,2],[2,2]],'#91c9b6']
+];
+const pieces=definitions.map(([name,cells,color],id)=>({
+ id,name,color,base:cells.map(c=>[...c]),cells:cells.map(c=>[...c]),
+ placed:false,x:0,y:0
+}));
+let solutions=[];
+let history=[];
+let selectedId=null;
+let drag=null;
+let busy=false;
+
+const $=id=>document.getElementById(id);
+const board=$('board'),tray=$('tray');
+const countNumber=$('countNumber'),countPanel=$('countPanel'),countNote=$('countNote');
+const status=$('status');
+
+function normalize(cells){
+ const minX=Math.min(...cells.map(c=>c[0]));
+ const minY=Math.min(...cells.map(c=>c[1]));
+ return cells.map(([x,y])=>[x-minX,y-minY]);
+}
+function rotate(cells){return normalize(cells.map(([x,y])=>[-y,x]));}
+function flip(cells){return normalize(cells.map(([x,y])=>[-x,y]));}
+function dims(cells){
+ return {w:Math.max(...cells.map(c=>c[0]))+1,h:Math.max(...cells.map(c=>c[1]))+1};
+}
+function sortedKey(cells){
+ return cells.map(([x,y])=>`${x},${y}`).sort().join('|');
+}
+function stateSnapshot(){
+ return {
+  pieces:pieces.map(p=>({
+   cells:p.cells.map(c=>[...c]),placed:p.placed,x:p.x,y:p.y
+  })),
+  selectedId
+ };
+}
+function restore(s){
+ s.pieces.forEach((v,i)=>{
+  pieces[i].cells=v.cells.map(c=>[...c]);
+  pieces[i].placed=v.placed;pieces[i].x=v.x;pieces[i].y=v.y;
+ });
+ selectedId=s.selectedId;
+}
+function pushHistory(){history.push(stateSnapshot());}
+function currentAnswerCount(){
+ let count=0;
+ outer: for(const solution of solutions){
+  for(const p of pieces){
+   if(!p.placed) continue;
+   const sol=solution.find(s=>s.piece===p.name);
+   if(!sol) continue outer;
+   const absolute=p.cells.map(([x,y])=>[p.x+x,p.y+y]);
+   if(sortedKey(absolute)!==sortedKey(sol.cells)) continue outer;
+  }
+  count++;
+ }
+ return count;
+}
+function updateCount(){
+ const n=currentAnswerCount();
+ countNumber.textContent=n.toLocaleString('ja-JP');
+ countPanel.classList.toggle('zero',n===0);
+ countPanel.classList.toggle('good',n>0);
+ if(n===0){
+  countNote.textContent='この配置から完成できる解答はありません';
+ }else if(n===solutions.length){
+  countNote.textContent='まだ可能性はすべて残っています';
+ }else{
+  countNote.textContent=`全${solutions.length.toLocaleString('ja-JP')}通りから絞り込み中`;
+ }
+}
+function blockElement(color,x,y,size){
+ const el=document.createElement('div');
+ el.className='piece-block';
+ el.style.cssText=`left:${x*size}px;top:${y*size}px;width:${size}px;height:${size}px;background:${color}`;
+ return el;
+}
+function renderBoard(){
+ board.innerHTML='';
+ for(let i=0;i<COLS*ROWS;i++){
+  const c=document.createElement('div');c.className='board-cell';board.append(c);
+ }
+ pieces.filter(p=>p.placed).forEach(p=>{
+  const layer=document.createElement('div');layer.className='board-piece';
+  const size=board.clientWidth/COLS;
+  p.cells.forEach(([x,y])=>{
+   layer.append(blockElement(p.color,(p.x+x)*size,(p.y+y)*size,size));
+  });
+  board.append(layer);
+ });
+}
+function renderTray(){
+ tray.innerHTML='';
+ const isMobile=window.matchMedia('(max-width: 599px)').matches;
+ const slotW=tray.clientWidth/(isMobile?4:6);
+ pieces.forEach(p=>{
+  const slot=document.createElement('div');
+  slot.className='tray-slot'+(selectedId===p.id?' selected':'')+(p.placed?' placed-slot':'');
+  slot.dataset.id=p.id;
+  const name=document.createElement('span');name.className='piece-name';name.textContent=p.name;slot.append(name);
+  if(!p.placed){
+   const d=dims(p.cells);
+   const size=Math.min(17,(slotW-22)/d.w,65/d.h);
+   const shape=document.createElement('div');shape.className='piece-shape';
+   shape.style.width=(d.w*size)+'px';shape.style.height=(d.h*size)+'px';
+   p.cells.forEach(([x,y])=>shape.append(blockElement(p.color,x,y,size)));
+   slot.append(shape);
+  }else{
+   const label=document.createElement('span');
+   label.style.cssText='font-size:11px;color:#8b9095';
+   label.textContent='盤面に配置中';slot.append(label);
+  }
+  slot.addEventListener('pointerdown',e=>startDrag(e,p.id,false));
+  tray.append(slot);
+ });
+}
+function render(){
+ renderBoard();renderTray();updateCount();
+ $('rotateBtn').disabled=selectedId===null||busy;
+ $('flipBtn').disabled=selectedId===null||busy;
+ $('undoBtn').disabled=history.length===0||busy;
+ $('resetBtn').disabled=busy;
+}
+function pointOnBoard(clientX,clientY){
+ const r=board.getBoundingClientRect();
+ const size=r.width/COLS;
+ return {x:(clientX-r.left)/size,y:(clientY-r.top)/size,size,r};
+}
+function canPlace(p,x,y){
+ return p.cells.every(([cx,cy])=>{
+  const bx=x+cx,by=y+cy;
+  if(bx<0||bx>=COLS||by<0||by>=ROWS)return false;
+  return !pieces.some(q=>q.id!==p.id&&q.placed&&q.cells.some(([qx,qy])=>q.x+qx===bx&&q.y+qy===by));
+ });
+}
+function startDrag(e,id,fromBoard){
+ if(busy)return;
+ e.preventDefault();
+ const p=pieces[id];
+ const before=stateSnapshot();
+ selectedId=id;
+ if(p.placed)p.placed=false;
+ const boardPt=pointOnBoard(e.clientX,e.clientY);
+ let grab={x:0,y:0};
+ if(fromBoard){
+  grab={x:Math.max(0,Math.min(dims(p.cells).w-1,Math.floor(boardPt.x-p.x))),
+        y:Math.max(0,Math.min(dims(p.cells).h-1,Math.floor(boardPt.y-p.y)))};
+ }else{
+  const slot=e.currentTarget.getBoundingClientRect();
+  const d=dims(p.cells);
+  const mini=Math.min(17,(slot.width-22)/d.w,65/d.h);
+  const shapeW=d.w*mini,shapeH=d.h*mini;
+  const sx=slot.left+(slot.width-shapeW)/2;
+  const sy=slot.top+(slot.height-shapeH)/2+4;
+  grab={x:Math.max(0,Math.min(d.w-1,Math.floor((e.clientX-sx)/mini))),
+        y:Math.max(0,Math.min(d.h-1,Math.floor((e.clientY-sy)/mini)))};
+ }
+ drag={id,before,grab, startX:e.clientX,startY:e.clientY,moved:false};
+ render();
+ const move=ev=>{
+  if(!drag)return;
+  if(Math.abs(ev.clientX-drag.startX)+Math.abs(ev.clientY-drag.startY)>5)drag.moved=true;
+ };
+ const up=ev=>{
+  window.removeEventListener('pointermove',move);
+  window.removeEventListener('pointerup',up);
+  window.removeEventListener('pointercancel',cancel);
+  if(!drag)return;
+  const d=drag;drag=null;
+  if(!d.moved){
+   restore(d.before);selectedId=id;render();return;
+  }
+  const pt=pointOnBoard(ev.clientX,ev.clientY);
+  const x=Math.round(pt.x-d.grab.x-0.5);
+  const y=Math.round(pt.y-d.grab.y-0.5);
+  const inside=ev.clientX>=pt.r.left-4&&ev.clientX<=pt.r.right+4&&
+               ev.clientY>=pt.r.top-4&&ev.clientY<=pt.r.bottom+4;
+  const targetTray=ev.clientY>pt.r.bottom+5;
+  if(inside&&canPlace(pieces[id],x,y)){
+   pushHistoryFrom(d.before);pieces[id].x=x;pieces[id].y=y;pieces[id].placed=true;
+   status.textContent='配置できたよ。解答数を確認してみよう。';
+  }else if(targetTray){
+   pushHistoryFrom(d.before);pieces[id].placed=false;
+   status.textContent='ピースを置き場に戻したよ。';
+  }else{
+   restore(d.before);
+   status.textContent='そこには置けないよ。元の状態に戻したよ。';
+  }
+  selectedId=id;render();
+ };
+ const cancel=()=>{
+  window.removeEventListener('pointermove',move);
+  window.removeEventListener('pointerup',up);
+  window.removeEventListener('pointercancel',cancel);
+  if(drag){restore(drag.before);drag=null;render();}
+ };
+ window.addEventListener('pointermove',move);
+ window.addEventListener('pointerup',up);
+ window.addEventListener('pointercancel',cancel);
+}
+// 盤面上のピースも直接つかんで移動・置き場へ戻せる
+board.addEventListener('pointerdown',e=>{
+ if(busy||!solutions.length)return;
+ const pt=pointOnBoard(e.clientX,e.clientY);
+ const bx=Math.floor(pt.x),by=Math.floor(pt.y);
+ if(bx<0||bx>=COLS||by<0||by>=ROWS)return;
+ for(let i=pieces.length-1;i>=0;i--){
+  const p=pieces[i];
+  if(!p.placed)continue;
+  if(p.cells.some(([x,y])=>p.x+x===bx&&p.y+y===by)){
+   startDrag(e,p.id,true);
+   return;
+  }
+ }
+ selectedId=null;
+ render();
+});
+
+function pushHistoryFrom(snapshot){history.push(snapshot);}
+function rotateSelected(isFlip){
+ if(selectedId===null)return;
+ const p=pieces[selectedId];pushHistory();
+ p.placed=false;
+ p.cells=isFlip?flip(p.cells):rotate(p.cells);
+ status.textContent=isFlip?'ピースを反転したよ。':'ピースを回転したよ。';
+ render();
+}
+$('rotateBtn').addEventListener('click',()=>rotateSelected(false));
+$('flipBtn').addEventListener('click',()=>rotateSelected(true));
+$('undoBtn').addEventListener('click',()=>{
+ if(!history.length)return;
+ const s=history.pop();
+ s.pieces.forEach((v,i)=>{
+  pieces[i].cells=v.cells.map(c=>[...c]);
+  pieces[i].placed=v.placed;pieces[i].x=v.x;pieces[i].y=v.y;
+ });
+ selectedId=s.selectedId;
+ status.textContent='ひとつ前の盤面に戻したよ。';
+ render();
+});
+$('resetBtn').addEventListener('click',()=>{
+ pushHistory();
+ pieces.forEach(p=>{
+  p.cells=p.base.map(c=>[...c]);p.placed=false;p.x=0;p.y=0;
+ });
+ selectedId=null;status.textContent='最初の状態に戻したよ。';render();
+});
+window.addEventListener('resize',render);
+
+async function init(){
+ try{
+  const response=await fetch('./pentomino-solutions.json');
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const data=await response.json();
+  if(data.board?.cols!==COLS||data.board?.rows!==ROWS||!Array.isArray(data.solutions)){
+   throw new Error('解答データの形式が違います');
+  }
+  solutions=data.solutions;
+  $('loading').remove();
+  $('countNote').textContent=`全${solutions.length.toLocaleString('ja-JP')}通りを読み込みました`;
+  status.textContent='準備完了。ピースを盤面へドラッグしてね。';
+  render();
+ }catch(error){
+  $('loading').textContent='解答データを読み込めませんでした。HTMLと pentomino-solutions.json を同じフォルダに置き、GitHub PagesなどのWebサーバーで開いてください。';
+  countNumber.textContent='—';
+  countNote.textContent=error.message;
+  console.error(error);
+ }
+}
+init();
+})();
+</script>
+</body>
+</html>
