@@ -175,33 +175,55 @@ body.popup-open{
   overflow:hidden;
 }
 
+
 /* 解答数カウンター */
 .answer-counter{
   position:absolute;
-  left:4%;
+  right:10px;
   bottom:3px;
-  width:92%;
+  left:auto;
+  width:auto;
+  min-width:145px;
   margin:0;
-  padding:0;
-  border:none;
-  background:transparent;
-  box-shadow:none;
-  text-align:center;
+  padding:4px 13px 5px;
+
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:0;
+
+  border:1px solid #e2ded5;
+  border-radius:12px;
+  background:linear-gradient(145deg,#fffefa,#f0ede5);
+  box-shadow:
+    0 2px 5px rgba(84,75,56,.08),
+    inset 0 1px 1px rgba(255,255,255,.8);
+
+  text-align:right;
   color:#747a7d;
 }
 
-.answer-counter .counter-label,
+.answer-counter .counter-label{
+  display:block;
+  font-size:10px;
+  font-weight:600;
+  line-height:1.2;
+  color:#92918a;
+}
+
+.answer-counter .counter-value{
+  font-size:clamp(22px,5vw,27px);
+  font-weight:750;
+  line-height:1.15;
+  color:#626b70;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+
 .answer-counter .counter-note{
   display:none;
 }
 
-.answer-counter .counter-value{
-  font-size:clamp(24px,6vw,34px);
-  font-weight:750;
-  line-height:1.3;
-  color:#626b70;
-  font-variant-numeric:tabular-nums;
-}
 </style>
 </head>
 <body>
@@ -246,7 +268,7 @@ body.popup-open{
 </div>
 <div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas>
 <div class="answer-counter" aria-live="polite">
-  <div class="counter-label">この配置から完成できる解答</div>
+  <div class="counter-label">残り解答数</div>
   <div class="counter-value" id="answerCount">読み込み中…</div>
   <div class="counter-note" id="answerNote">ピースを置くたびに、条件に合う解答数を更新します</div>
 </div>
