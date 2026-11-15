@@ -22,7 +22,7 @@ button:active{transform:translateY(1px);box-shadow:0 1px 3px #544b3820,inset 0 1
 button:disabled{opacity:.38;cursor:not-allowed;transform:none}
 button.reset{margin-left:auto;min-width:48px}
 #status{margin-left:auto;font-size:13px;font-weight:650;color:#777a7c;white-space:nowrap}
-.stage{background:linear-gradient(145deg,#fffefa,#f0ede5);border:1px solid #e2ded5;border-radius:19px;padding:8px;box-shadow:0 5px 16px #554b3812;overflow:hidden;transform: translateY(-20px);}
+.stage{position:relative;background:linear-gradient(145deg,#fffefa,#f0ede5);border:1px solid #e2ded5;border-radius:19px;padding:8px;box-shadow:0 5px 16px #554b3812;overflow:hidden;transform: translateY(-20px);}
 canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .help{margin:12px 2px 0;font-size:13px;line-height:1.7;color:#858780}.win{color:#4c9878!important}
 @media(max-width:600px){
@@ -175,18 +175,33 @@ body.popup-open{
   overflow:hidden;
 }
 
-/* 解答数カウンター（実験版のみ） */
+/* 解答数カウンター */
 .answer-counter{
-  width:min(100%,900px);margin: -10px auto 14px;padding:12px 16px;
-  border:1px solid #e2ded5;border-radius:15px;
-  background:linear-gradient(145deg,#fffefa,#f0ede5);
-  box-shadow:0 3px 10px #554b3810;text-align:center;color:#747a7d;
+  position:absolute;
+  left:4%;
+  bottom:3px;
+  width:92%;
+  margin:0;
+  padding:0;
+  border:none;
+  background:transparent;
+  box-shadow:none;
+  text-align:center;
+  color:#747a7d;
 }
-.answer-counter .counter-label{font-size:12px;letter-spacing:.04em}
-.answer-counter .counter-value{font-size:clamp(22px,5vw,30px);font-weight:750;line-height:1.35;color:#626b70;font-variant-numeric:tabular-nums}
-.answer-counter .counter-note{font-size:11px;color:#969790}
-@media(max-width:600px){.answer-counter{margin:-8px auto 10px;padding:9px 12px}.answer-counter .counter-note{font-size:10px}}
 
+.answer-counter .counter-label,
+.answer-counter .counter-note{
+  display:none;
+}
+
+.answer-counter .counter-value{
+  font-size:clamp(24px,6vw,34px);
+  font-weight:750;
+  line-height:1.3;
+  color:#626b70;
+  font-variant-numeric:tabular-nums;
+}
 </style>
 </head>
 <body>
@@ -229,11 +244,12 @@ body.popup-open{
     </button>
   </div>
 </div>
-<div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas></div>
+<div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas>
 <div class="answer-counter" aria-live="polite">
   <div class="counter-label">この配置から完成できる解答</div>
   <div class="counter-value" id="answerCount">読み込み中…</div>
   <div class="counter-note" id="answerNote">ピースを置くたびに、条件に合う解答数を更新します</div>
+</div>
 </div>
 <p class="help">ピースをタップして選択、ドラッグして盤面へ。選択中は「回転」「反転」で向きを変えられます。<br>
 盤面上のピースもドラッグして戻したり、置き直したりできます。重なったり盤面からはみ出したりする場所には置けません。</p>
