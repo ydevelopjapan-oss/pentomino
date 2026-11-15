@@ -22,7 +22,7 @@ button:active{transform:translateY(1px);box-shadow:0 1px 3px #544b3820,inset 0 1
 button:disabled{opacity:.38;cursor:not-allowed;transform:none}
 button.reset{margin-left:auto;min-width:48px}
 #status{margin-left:auto;font-size:13px;font-weight:650;color:#777a7c;white-space:nowrap}
-.stage{background:linear-gradient(145deg,#fffefa,#f0ede5);border:1px solid #e2ded5;border-radius:19px;padding:8px;box-shadow:0 5px 16px #554b3812;overflow:hidden;transform: translateY(-20px);}
+.stage{position:relative;background:linear-gradient(145deg,#fffefa,#f0ede5);border:1px solid #e2ded5;border-radius:19px;padding:8px;box-shadow:0 5px 16px #554b3812;overflow:hidden;transform: translateY(-20px);}
 canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .help{margin:12px 2px 0;font-size:13px;line-height:1.7;color:#858780}.win{color:#4c9878!important}
 @media(max-width:600px){
@@ -174,6 +174,44 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-
 body.popup-open{
   overflow:hidden;
 }
+
+/* 解答数カウンター */
+.answer-counter{
+  position:absolute;
+  right:10px;
+  bottom:3px;
+  left:auto;
+  width:auto;
+  min-width:145px;
+  margin:0;
+  padding:4px 13px 5px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:0;
+  border:1px solid #e2ded5;
+  border-radius:12px;
+  background:linear-gradient(145deg,#fffefa,#f0ede5);
+  box-shadow:0 2px 5px rgba(84,75,56,.08),inset 0 1px 1px rgba(255,255,255,.8);
+  text-align:right;
+  color:#747a7d;
+}
+.answer-counter .counter-label{
+  display:block;
+  font-size:10px;
+  font-weight:600;
+  line-height:1.2;
+  color:#92918a;
+}
+.answer-counter .counter-value{
+  font-size:clamp(22px,5vw,27px);
+  font-weight:750;
+  line-height:1.15;
+  color:#626b70;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.answer-counter .counter-note{display:none;}
 </style>
 </head>
 <body>
@@ -216,7 +254,14 @@ body.popup-open{
     </button>
   </div>
 </div>
-<div class="stage"><canvas id="game" aria-label="ペントミノゲーム盤"></canvas></div>
+<div class="stage">
+  <canvas id="game" aria-label="ペントミノゲーム盤"></canvas>
+  <div class="answer-counter" aria-live="polite">
+    <div class="counter-label">残り解答数</div>
+    <div class="counter-value" id="answerCount">読み込み中…</div>
+    <div class="counter-note" id="answerNote">配置に合う解答数を更新します</div>
+  </div>
+</div>
 <p class="help">ピースをタップして選択、ドラッグして盤面へ。選択中は「回転」「反転」で向きを変えられます。<br>
 盤面上のピースもドラッグして戻したり、置き直したりできます。重なったり盤面からはみ出したりする場所には置けません。</p>
 </main>
@@ -272,6 +317,65 @@ function restoreState(state){
 // ==============================
 
 const STORAGE_KEY = 'pentomino-game-data-v1';
+
+// 解答データを読み込み、現在の配置と一致する候補数を数える
+let solutionData = null;
+const answerCountEl = document.getElementById('answerCount');
+const answerNoteEl = document.getElementById('answerNote');
+
+function absoluteCellsKey(cells){
+  return cells.map(([x,y])=>y*COLS+x).sort((a,b)=>a-b).join(',');
+}
+
+async function loadSolutions(){
+  try{
+    const response = await fetch('./pentomino-solutions.json', {cache:'no-store'});
+    if(!response.ok) throw new Error('HTTP '+response.status);
+    const data = await response.json();
+    if(data.format !== 'pentomino-solutions-v1' || !Array.isArray(data.solutions)){
+      throw new Error('解答データの形式が違います');
+    }
+    solutionData = data.solutions.map(solution=>{
+      const piecesByName = new Map();
+      for(const item of solution){
+        if(!item || typeof item.piece !== 'string' || !Array.isArray(item.cells)) continue;
+        piecesByName.set(item.piece, absoluteCellsKey(item.cells));
+      }
+      return piecesByName;
+    });
+    updateAnswerCount();
+  }catch(error){
+    answerCountEl.textContent = '読込エラー';
+    answerNoteEl.textContent = 'pentomino-solutions.json を同じフォルダに置いてください';
+    console.error('解答データを読み込めませんでした', error);
+  }
+}
+
+// 置かれているピースすべてと一致する解答だけを数える（未完成時は候補数）
+function updateAnswerCount(){
+  if(!solutionData) return;
+  const placed = pieces.filter(p=>p.placed);
+  let count = 0;
+  for(const solution of solutionData){
+    let matches = true;
+    for(const p of placed){
+      const expected = solution.get(p.name);
+      if(expected === undefined){ matches = false; break; }
+      const actual = absoluteCellsKey(p.cells.map(([x,y])=>[p.x+x,p.y+y]));
+      if(actual !== expected){ matches = false; break; }
+    }
+    if(matches) count++;
+  }
+  answerCountEl.textContent = count.toLocaleString('ja-JP') + ' 通り';
+  answerNoteEl.textContent = placed.length === 12
+    ? (count ? '完成・登録解答と一致' : '登録された解答とは一致しません')
+    : `配置済み ${placed.length} / 12 ピース`;
+
+  // 12ピースが登録済みの正解配置になった場合だけクリア演出
+  if(placed.length === 12 && count > 0 && !clearPopup.classList.contains('show')){
+    startClearPopup();
+  }
+}
 
 // 現在の盤面を保存
 function saveGameData(){
@@ -347,6 +451,7 @@ function undo(){
   drag = null;
   draw();
   saveGameData();
+  updateAnswerCount();
 }
 function bounds(cells){const xs=cells.map(p=>p[0]),ys=cells.map(p=>p[1]);return{minX:Math.min(...xs),minY:Math.min(...ys),maxX:Math.max(...xs),maxY:Math.max(...ys)};}
 function normalize(cells){const b=bounds(cells);return cells.map(([x,y])=>[x-b.minX,y-b.minY]);}
@@ -1015,14 +1120,7 @@ function finishDrag(e){
  drag=null;
 draw();
 saveGameData();
-
-// 12ピースすべてが盤面に置かれたら
-if(
-  pieces.every(p=>p.placed) &&
-  !clearPopup.classList.contains('show')
-){
-  startClearPopup();
-}
+updateAnswerCount();
 }
 canvas.addEventListener('pointerup',finishDrag);
 canvas.addEventListener('pointercancel',()=>{if(drag){restoreState(drag.before);drag=null;draw();}});
@@ -1032,6 +1130,7 @@ rotateBtn.addEventListener('click',()=>{
   selected.cells=rotate(selected.cells);
   draw();
   saveGameData();
+  updateAnswerCount();
 });
 
 flipBtn.addEventListener('click',()=>{
@@ -1040,6 +1139,7 @@ flipBtn.addEventListener('click',()=>{
   selected.cells=flip(selected.cells);
   draw();
   saveGameData();
+  updateAnswerCount();
 });
 resetBtn.addEventListener('click',()=>{
   history.push(saveState());
@@ -1055,10 +1155,12 @@ resetBtn.addEventListener('click',()=>{
   drag=null;
   draw();
   saveGameData();
+  updateAnswerCount();
 });
 undoBtn.addEventListener('click',undo);
-// 前回のゲームデータを読み込む
+// 前回のゲームデータと解答データを読み込む
 loadGameData();
+loadSolutions();
 
 window.addEventListener('resize',resize);
 resize();
