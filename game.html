@@ -175,23 +175,6 @@ body.popup-open{
   overflow:hidden;
 }
 
-/* モード選択への戻りリンク */
-.mode-back{
-  display:inline-block;
-  margin:0 2px 8px;
-  color:#858780;
-  font-size:12px;
-  text-decoration:none;
-}
-.mode-back:active{opacity:.65}
-.mode-label{
-  margin:0 2px 8px;
-  color:#858780;
-  font-size:12px;
-  font-weight:650;
-}
-.mode-label:empty{display:none}
-
 /* 解答数カウンター */
 .answer-counter{
   position:absolute;
@@ -234,11 +217,11 @@ body.popup-open{
 </head>
 <body>
 <main>
-<a class="mode-back" href="./index.html">← モード選択へ戻る</a>
-<div class="mode-label" id="modeLabel"></div>
 <div class="header-toolbar">
 <div class="header">
-  <img src="assets/logo.PNG" alt="Pentomino" class="logo">
+  <a href="./index.html" aria-label="トップページへ戻る" style="display:block;width:100%;">
+    <img src="assets/logo.PNG" alt="Pentomino" class="logo">
+  </a>
 </div>
 
   <div class="toolbar">
@@ -342,8 +325,7 @@ const STORAGE_KEY = isBeginner
   ? 'pentomino-beginner-data-v1'
   : 'pentomino-advanced-data-v1';
 
-document.getElementById('modeLabel').textContent =
-  isBeginner ? '初級｜残り解答数をヒントに進めよう' : '上級｜ヒントなしで挑戦'; 
+// ゲーム画面にはモード説明を表示しない
 if (!isBeginner) {
   document.querySelector('.answer-counter').hidden = true;
 }
