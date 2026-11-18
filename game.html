@@ -182,7 +182,7 @@ body.popup-open{
   bottom:3px;
   left:auto;
   width:auto;
-  min-width:145px;
+  min-width:115px;
   margin:0;
   padding:4px 13px 5px;
   display:flex;
@@ -260,7 +260,7 @@ body.popup-open{
 <div class="stage">
   <canvas id="game" aria-label="ペントミノゲーム盤"></canvas>
   <div class="answer-counter" aria-live="polite">
-    <div class="counter-label">残り解答数</div>
+    <div class="counter-label">Answer Count</div>
     <div class="counter-value" id="answerCount">読み込み中…</div>
     <div class="counter-note" id="answerNote">配置に合う解答数を更新します</div>
   </div>
@@ -387,7 +387,7 @@ function updateAnswerCount(){
     }
     if(matches) count++;
   }
-  answerCountEl.textContent = count.toLocaleString('ja-JP') + ' 通り';
+  answerCountEl.textContent = count.toLocaleString('ja-JP');
   answerNoteEl.textContent = placed.length === 12
     ? (count ? '完成・登録解答と一致' : '登録された解答とは一致しません')
     : `配置済み ${placed.length} / 12 ピース`;
