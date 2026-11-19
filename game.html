@@ -408,6 +408,7 @@ if (!isBeginner) {
 
 // 解答データを読み込み、現在の配置と一致する候補数を数える
 let solutionData = null;
+let suppressInitialClear = true;
 const answerCountEl = document.getElementById('answerCount');
 const answerNoteEl = document.getElementById('answerNote');
 
@@ -445,7 +446,7 @@ function updateAnswerCount(){
 
   // 上級は解答データを使わず、全ピース配置でクリア演出へ進む
   if (!isBeginner) {
-    if (placed.length === 12 && !clearPopup.classList.contains('show')) {
+    if (placed.length === 12 && !clearPopup.classList.contains('show')&& !suppressInitialClear) {
       startClearPopup();
     }
     return;
@@ -469,7 +470,7 @@ function updateAnswerCount(){
     : `配置済み ${placed.length} / 12 ピース`;
 
   // 12ピースが登録済みの正解配置になった場合だけクリア演出
-  if(placed.length === 12 && count > 0 && !clearPopup.classList.contains('show')){
+  if(placed.length === 12 && count > 0 && !clearPopup.classList.contains('show')&& !suppressInitialClear){
     startClearPopup();
   }
 }
