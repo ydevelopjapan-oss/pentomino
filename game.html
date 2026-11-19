@@ -433,6 +433,7 @@ async function loadSolutions(){
       return piecesByName;
     });
     updateAnswerCount();
+    suppressInitialClear = false;
   }catch(error){
     answerCountEl.textContent = '読込エラー';
     answerNoteEl.textContent = 'pentomino-solutions.json を同じフォルダに置いてください';
