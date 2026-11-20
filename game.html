@@ -438,6 +438,7 @@ async function loadSolutions(){
     answerCountEl.textContent = '読込エラー';
     answerNoteEl.textContent = 'pentomino-solutions.json を同じフォルダに置いてください';
     console.error('解答データを読み込めませんでした', error);
+    suppressInitialClear = false;
   }
 }
 
