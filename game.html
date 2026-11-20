@@ -1276,6 +1276,12 @@ if (isBeginner) {
 }
 
 window.addEventListener('resize',resize);
+window.addEventListener('orientationchange',()=>{
+
+  setTimeout(resize,300);
+
+});
+
 resize();
 
 // 更新前にゲームデータを保存できるようにする
