@@ -49,18 +49,6 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-
   justify-content:center;
   overflow:hidden;
  }
- #dragLayer{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  z-index:2;
-  pointer-events:none;
-}
-
-.answer-counter{
-  z-index:3;
-}
  .header{margin:0 2px 5px;align-items:flex-start}
  h1{font-size:18px}
  .sub{font-size:11px;margin:0 2px 8px}
@@ -112,6 +100,21 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-
   display: flex;
   align-items: center;
   justify-content: center;
+}
+#dragLayer{
+  position:absolute;
+  left:0;
+  top:0;
+  right:0;
+  bottom:0;
+  width:auto;
+  height:auto;
+  z-index:2;
+  pointer-events:none;
+}
+
+.answer-counter{
+  z-index:3;
 }
 .header-toolbar {
   display: flex;
@@ -382,11 +385,10 @@ stage.appendChild(dragCanvas);
 const dragCtx=dragCanvas.getContext('2d');
 
 function resizeDragLayer(){
-  const width=stage.clientWidth;
-  const height=stage.clientHeight;
+  const rect=dragCanvas.getBoundingClientRect();
 
-  dragCanvas.width=Math.round(width*dpr);
-  dragCanvas.height=Math.round(height*dpr);
+  dragCanvas.width=Math.round(rect.width*dpr);
+  dragCanvas.height=Math.round(rect.height*dpr);
 
   dragCtx.setTransform(dpr,0,0,dpr,0,0);
 }
@@ -666,7 +668,7 @@ function drawPiece(cells, x, y, size, color, alpha = 1, targetCtx = ctx) {
     const w = size + protrude - seam;
     const h = size + protrude - seam;
 
-    const gradient = ctx.createLinearGradient(
+    const gradient = c.createLinearGradient(
       px, py, px + w, py + h
     );
 
