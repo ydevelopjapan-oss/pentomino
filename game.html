@@ -49,6 +49,18 @@ canvas{display:block;width:100%;height:auto;touch-action:none;user-select:none;-
   justify-content:center;
   overflow:hidden;
  }
+ #dragLayer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:2;
+  pointer-events:none;
+}
+
+.answer-counter{
+  z-index:3;
+}
  .header{margin:0 2px 5px;align-items:flex-start}
  h1{font-size:18px}
  .sub{font-size:11px;margin:0 2px 8px}
@@ -361,6 +373,23 @@ body.popup-open{
 <script>
 (() => {
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const stage=canvas.parentElement;
+
+const dragCanvas=document.createElement('canvas');
+dragCanvas.id='dragLayer';
+stage.appendChild(dragCanvas);
+
+const dragCtx=dragCanvas.getContext('2d');
+
+function resizeDragLayer(){
+  const width=stage.clientWidth;
+  const height=stage.clientHeight;
+
+  dragCanvas.width=Math.round(width*dpr);
+  dragCanvas.height=Math.round(height*dpr);
+
+  dragCtx.setTransform(dpr,0,0,dpr,0,0);
+}
 const pieceTexture=new Image(),boardTexture=new Image();
 pieceTexture.src='assets/piece-texture.png';boardTexture.src='assets/board-texture.png';
 let assetsReady=0;[pieceTexture,boardTexture].forEach(img=>img.onload=()=>{assetsReady++;draw();});
@@ -582,7 +611,9 @@ function resize() {
   boardX=(layoutWidth-COLS*cell)/2+4;
   canvas.width=Math.round(layoutWidth*dpr);canvas.height=Math.round(layoutHeight*dpr);
   canvas.style.width=layoutWidth+'px';canvas.style.height=layoutHeight+'px';
-  ctx.setTransform(dpr,0,0,dpr,0,0);draw();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+resizeDragLayer();
+draw();
 }
 function trayOrigin(p) {
   const col=p.id%trayCols,row=Math.floor(p.id/trayCols);
@@ -598,9 +629,10 @@ function getPieceAt(px,py){
  }return null;
 }
 
-function drawPiece(cells, x, y, size, color, alpha = 1) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
+function drawPiece(cells, x, y, size, color, alpha = 1, targetCtx = ctx) {
+  const c = targetCtx;
+  c.save();
+  c.globalAlpha = alpha;
 
   const has = (x, y) =>
     cells.some(([cx, cy]) => cx === x && cy === y);
@@ -611,10 +643,10 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
   const radius = size * 0.4;
 
   // 影は右下方向へ
-  ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
-  ctx.shadowBlur = size * 0.16;
-  ctx.shadowOffsetX = size * 0.07;
-  ctx.shadowOffsetY = size * 0.07;
+  c.shadowColor = 'rgba(70, 75, 85, 0.22)';
+  c.shadowBlur = size * 0.16;
+  c.shadowOffsetX = size * 0.07;
+  c.shadowOffsetY = size * 0.07;
 
   // 左上から右下の順に描画する
   const drawOrder = [...cells].sort((a, b) => {
@@ -642,39 +674,39 @@ function drawPiece(cells, x, y, size, color, alpha = 1) {
     gradient.addColorStop(0.5, color);
     gradient.addColorStop(1, darkenColor(color, 18));
 
-    ctx.beginPath();
-    ctx.roundRect(px, py, w, h, radius);
+    c.beginPath();
+    c.roundRect(px, py, w, h, radius);
 
-    ctx.fillStyle = gradient;
-    ctx.fill();
+    c.fillStyle = gradient;
+    c.fill();
 
     // クッションの境界
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+    c.shadowColor = 'transparent';
+    c.shadowBlur = 0;
+    c.shadowOffsetX = 0;
+    c.shadowOffsetY = 0;
 
-    ctx.strokeStyle = 'rgba(90, 85, 80, 0.13)';
-    ctx.lineWidth = Math.max(0.7, size * 0.025);
-    ctx.stroke();
+    c.strokeStyle = 'rgba(90, 85, 80, 0.13)';
+    c.lineWidth = Math.max(0.7, size * 0.025);
+    c.stroke();
 
     // 左上側の柔らかい光沢
-    ctx.strokeStyle = 'rgba(255,255,255,0.42)';
-    ctx.lineWidth = Math.max(1, size * 0.035);
-    ctx.lineCap = 'round';
+    c.strokeStyle = 'rgba(255,255,255,0.42)';
+    c.lineWidth = Math.max(1, size * 0.035);
+    c.lineCap = 'round';
 
-    ctx.beginPath();
-    ctx.moveTo(px + radius, py + 2);
-    ctx.lineTo(px + w - radius, py + 2);
-    ctx.moveTo(px + 2, py + radius);
-    ctx.lineTo(px + 2, py + h - radius);
-    ctx.stroke();
+    c.beginPath();
+    c.moveTo(px + radius, py + 2);
+    c.lineTo(px + w - radius, py + 2);
+    c.moveTo(px + 2, py + radius);
+    c.lineTo(px + 2, py + h - radius);
+    c.stroke();
 
     // 次のクッションにも影を適用
-    ctx.shadowColor = 'rgba(70, 75, 85, 0.22)';
-    ctx.shadowBlur = size * 0.16;
-    ctx.shadowOffsetX = size * 0.07;
-    ctx.shadowOffsetY = size * 0.07;
+    c.shadowColor = 'rgba(70, 75, 85, 0.22)';
+    c.shadowBlur = size * 0.16;
+    c.shadowOffsetX = size * 0.07;
+    c.shadowOffsetY = size * 0.07;
   }
 
  function lightenColor(hex, amount) {
@@ -695,11 +727,12 @@ function adjustColor(hex, amount) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-  ctx.restore();
+  c.restore();
 }
 
 function draw(){
  ctx.clearRect(0,0,layoutWidth,layoutHeight);
+ dragCtx.clearRect(0,0,stage.clientWidth,stage.clientHeight);
  // Board: ivory board surface, fine grid and a narrow soft rim.
  const bw=COLS*cell,bh=ROWS*cell;
  ctx.save();ctx.shadowColor='rgba(82,76,65,.15)';ctx.shadowBlur=10;ctx.shadowOffsetY=3;
@@ -756,7 +789,35 @@ function draw(){
   const o=trayOrigin(p);drawPiece(p.cells,o.x,o.y,mini,p.color);
   if(selected===p){const d=dims(p.cells);ctx.strokeStyle='#9a9a91';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.strokeRect(o.x-3,o.y-3,d.w*mini+6,d.h*mini+6);ctx.setLineDash([]);}
  }
- if(drag){const p=drag.piece,gx=drag.pointerX-drag.grabX*cell,gy=drag.pointerY-drag.grabY*cell;drawPiece(p.cells,gx,gy,cell,p.color,.9);}
+  if(drag){
+   const p=drag.piece;
+
+   // ゲームキャンバスとドラッグキャンバスの位置・倍率を取得
+   const gameRect=canvas.getBoundingClientRect();
+   const dragRect=dragCanvas.getBoundingClientRect();
+
+   const scaleX=gameRect.width/layoutWidth;
+   const scaleY=gameRect.height/layoutHeight;
+
+   // ピースの左上位置（ゲーム座標）
+   const gx=drag.pointerX-drag.grabX*cell;
+   const gy=drag.pointerY-drag.grabY*cell;
+
+   // ドラッグキャンバス上の座標に変換
+   const x=gameRect.left-dragRect.left+gx*scaleX;
+   const y=gameRect.top-dragRect.top+gy*scaleY;
+
+   // ドラッグ専用キャンバスに描画
+   drawPiece(
+     p.cells,
+     x,
+     y,
+     cell*scaleX,
+     p.color,
+     .9,
+     dragCtx
+   );
+ }
  updateStatus();
 }
 // ==============================
