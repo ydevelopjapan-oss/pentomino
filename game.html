@@ -803,8 +803,8 @@ function draw(){
    const scaleY=gameRect.height/layoutHeight;
 
    // ピースの左上位置（ゲーム座標）
-   const gx=drag.pointerX-drag.grabX*cell;
-   const gy=drag.pointerY-drag.grabY*cell;
+   const gx=drag.pointerX-(drag.grabX+drag.grabRatioX)*cell;
+   const gy=drag.pointerY-(drag.grabY+drag.grabRatioY)*cell;
 
    // ドラッグキャンバス上の座標に変換
    const x=gameRect.left-dragRect.left+gx*scaleX;
@@ -1277,15 +1277,62 @@ function updateStatus(){
 function point(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*layoutWidth/r.width,y:(e.clientY-r.top)*layoutHeight/r.height};}
 canvas.addEventListener('pointerdown',e=>{
  e.preventDefault();
- const pt=point(e),hit=getPieceAt(pt.x,pt.y);if(!hit){selected=null;draw();return;}
- const before=saveState(),p=hit.piece;selected=p;if(hit.fromBoard)p.placed=false;
- drag={piece:p,grabX:hit.anchor[0],grabY:hit.anchor[1],pointerX:pt.x,pointerY:pt.y,before};
- canvas.setPointerCapture(e.pointerId);draw();
+
+ const pt=point(e);
+ const hit=getPieceAt(pt.x,pt.y);
+
+ if(!hit){
+   selected=null;
+   draw();
+   return;
+ }
+
+ const before=saveState();
+ const p=hit.piece;
+
+ // 掴んだマスの位置を取得
+ const sourceSize=hit.fromBoard?cell:mini;
+ const o=hit.fromBoard?null:trayOrigin(p);
+
+ const anchorLeft=hit.fromBoard
+   ? boardX+(p.x+hit.anchor[0])*cell
+   : o.x+hit.anchor[0]*mini;
+
+ const anchorTop=hit.fromBoard
+   ? boardY+(p.y+hit.anchor[1])*cell
+   : o.y+hit.anchor[1]*mini;
+
+ // マスの中で指がどこにあるかを割合で記録
+ const grabRatioX=Math.max(0,Math.min(1,
+   (pt.x-anchorLeft)/sourceSize
+ ));
+ const grabRatioY=Math.max(0,Math.min(1,
+   (pt.y-anchorTop)/sourceSize
+ ));
+
+ selected=p;
+
+ if(hit.fromBoard)p.placed=false;
+
+ drag={
+   piece:p,
+   grabX:hit.anchor[0],
+   grabY:hit.anchor[1],
+   grabRatioX,
+   grabRatioY,
+   pointerX:pt.x,
+   pointerY:pt.y,
+   before
+ };
+
+ canvas.setPointerCapture(e.pointerId);
+ draw();
 });
 canvas.addEventListener('pointermove',e=>{if(!drag)return;const pt=point(e);drag.pointerX=pt.x;drag.pointerY=pt.y;draw();});
 function finishDrag(e){
  if(!drag)return;const pt=point(e),d=drag,p=d.piece;
- const x=Math.round((pt.x-boardX)/cell-d.grabX),y=Math.round((pt.y-boardY)/cell-d.grabY);
+ const x=Math.round((pt.x-boardX)/cell-d.grabX-d.grabRatioX);
+ const y=Math.round((pt.y-boardY)/cell-d.grabY-d.grabRatioY);
  const valid=p.cells.every(([cx,cy])=>{const bx=x+cx,by=y+cy;if(bx<0||bx>=COLS||by<0||by>=ROWS)return false;return!pieces.some(q=>q!==p&&q.placed&&q.cells.some(([qx,qy])=>q.x+qx===bx&&q.y+qy===by));});
  const inside=pt.x>=boardX-5&&pt.x<=boardX+COLS*cell+5&&pt.y>=boardY-5&&pt.y<=boardY+ROWS*cell+5;
  if(valid&&inside){history.push(d.before);p.x=x;p.y=y;p.placed=true;}else if(d.before.pieces[p.id].placed&&pt.y>=trayY){history.push(d.before);p.placed=false;selected=p}else {restoreState(d.before);selected=p;}
