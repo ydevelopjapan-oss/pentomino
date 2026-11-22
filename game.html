@@ -1299,6 +1299,7 @@ canvas.addEventListener('pointerdown',e=>{
 
  const before=saveState();
  const p=hit.piece;
+ playPentominoSound('pick.wav');
 
  // 掴んだマスの位置を取得
  const sourceSize=hit.fromBoard?cell:mini;
