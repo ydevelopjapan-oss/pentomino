@@ -1578,5 +1578,13 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+<script>
+window.playPentominoSound = function(file) {
+  const sound = new Audio('./audio/' + file);
+  sound.volume = 0.65;
+  sound.play().catch(() => {});
+};
+</script>
+
 </body>
 </html>
