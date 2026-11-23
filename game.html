@@ -1598,16 +1598,15 @@ const pentominoSounds = {};
 ['pick.wav', 'place.wav', 'flip.wav', 'clear.wav'].forEach(file => {
   const audio = new Audio('./audio/' + file);
   audio.preload = 'auto';
+  audio.load();
   pentominoSounds[file] = audio;
 });
 
 window.playPentominoSound = function(file) {
-  const original = pentominoSounds[file];
-  if (!original) return;
+  const sound = pentominoSounds[file];
+  if (!sound) return;
 
-  const sound = original.cloneNode();
-  sound.volume = 0.65;
-
+  sound.currentTime = 0;
   sound.play().catch(error => {
     console.error('効果音再生エラー:', file, error);
   });
