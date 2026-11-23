@@ -1582,7 +1582,14 @@ if ('serviceWorker' in navigator) {
 window.playPentominoSound = function(file) {
   const sound = new Audio('./audio/' + file);
   sound.volume = 0.65;
-  sound.play().catch(() => {});
+
+  sound.addEventListener('error', () => {
+    alert('音声ファイルの読み込みに失敗しました: ' + file);
+  });
+
+  sound.play().catch(error => {
+    alert('音声の再生に失敗しました: ' + error.name);
+  });
 };
 </script>
 
