@@ -304,6 +304,13 @@ body.popup-open{
   }
 
 }
+.stage,
+.stage * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
 </style>
 </head>
 <body>
@@ -383,6 +390,13 @@ dragCanvas.id='dragLayer';
 stage.appendChild(dragCanvas);
 
 const dragCtx=dragCanvas.getContext('2d');
+stage.addEventListener('contextmenu', e => {
+  e.preventDefault();
+}, true);
+
+stage.addEventListener('selectstart', e => {
+  e.preventDefault();
+});
 // Safariの長押しメニュー・選択動作を抑制
 [canvas, dragCanvas].forEach(el=>{
   el.addEventListener('contextmenu',e=>{
