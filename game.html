@@ -1594,13 +1594,21 @@ if ('serviceWorker' in navigator) {
 
 <script>
 window.playPentominoSound = function(file) {
-  alert('効果音関数が呼ばれたよ！: ' + file);
-
   const sound = new Audio('./audio/' + file);
   sound.volume = 0.65;
 
-  sound.play().catch(error => {
-    alert('再生エラー: ' + error.name);
+  sound.addEventListener('canplaythrough', () => {
+    alert('音声ファイルの読み込み成功！');
+  }, { once: true });
+
+  sound.addEventListener('error', () => {
+    alert('音声ファイルの読み込み失敗！');
+  });
+
+  sound.play().then(() => {
+    alert('再生開始成功！');
+  }).catch(error => {
+    alert('再生失敗！: ' + error.name);
   });
 };
 </script>
