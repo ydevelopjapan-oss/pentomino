@@ -438,6 +438,32 @@ function checkDragScale(){
     scaleY: gameRect.height / layoutHeight,
     cell: cell
   });
+　let debugBox = document.getElementById('debugBox');
+
+if (!debugBox) {
+  debugBox = document.createElement('div');
+  debugBox.id = 'debugBox';
+  debugBox.style.cssText = `
+    position:fixed;
+    top:10px;
+    left:10px;
+    z-index:99999;
+    background:#fff;
+    color:#000;
+    font-size:12px;
+    padding:8px;
+    pointer-events:none;
+  `;
+  document.body.appendChild(debugBox);
+}
+
+debugBox.textContent =
+  `game top:${gameRect.top.toFixed(1)}
+game height:${gameRect.height.toFixed(1)}
+drag top:${dragRect.top.toFixed(1)}
+drag height:${dragRect.height.toFixed(1)}
+scaleY:${(gameRect.height/layoutHeight).toFixed(4)}`;
+ 
 }
 const pieceTexture=new Image(),boardTexture=new Image();
 pieceTexture.src='assets/piece-texture.png';boardTexture.src='assets/board-texture.png';
