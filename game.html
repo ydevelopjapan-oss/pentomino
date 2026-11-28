@@ -428,62 +428,50 @@ function resizeDragLayer(){
 
   dragCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
+
 function checkDragScale(){
   const gameRect = canvas.getBoundingClientRect();
   const dragRect = dragCanvas.getBoundingClientRect();
-debugBox.innerHTML += `
-  <br>--- 横幅チェック ---
-  <br>gameRect.width: ${gameRect.width.toFixed(2)}
-  <br>dragRect.width: ${dragRect.width.toFixed(2)}
-  <br>layoutWidth: ${layoutWidth.toFixed(2)}
-  <br>game / layout: ${(gameRect.width / layoutWidth).toFixed(4)}
-  <br>drag / layout: ${(dragRect.width / layoutWidth).toFixed(4)}
-`;
-  console.log('盤面キャンバス:', {
-    top: gameRect.top,
-    height: gameRect.height,
-    width: gameRect.width
-  });
 
-  console.log('ドラッグキャンバス:', {
-    top: dragRect.top,
-    height: dragRect.height,
-    width: dragRect.width
-  });
+  let debugBox = document.getElementById('debugBox');
 
-  console.log('縮尺:', {
-    scaleX: gameRect.width / layoutWidth,
-    scaleY: gameRect.height / layoutHeight,
-    cell: cell
-  });
-　let debugBox = document.getElementById('debugBox');
+  if (!debugBox) {
+    debugBox = document.createElement('div');
+    debugBox.id = 'debugBox';
+    debugBox.style.cssText = `
+      position:fixed;
+      top:10px;
+      left:10px;
+      z-index:99999;
+      background:#fff;
+      color:#000;
+      font-size:12px;
+      line-height:1.5;
+      padding:10px;
+      border:1px solid #888;
+      border-radius:8px;
+      pointer-events:none;
+    `;
+    document.body.appendChild(debugBox);
+  }
 
-if (!debugBox) {
-  debugBox = document.createElement('div');
-  debugBox.id = 'debugBox';
-  debugBox.style.cssText = `
-    position:fixed;
-    top:10px;
-    left:10px;
-    z-index:99999;
-    background:#fff;
-    color:#000;
-    font-size:12px;
-    padding:8px;
-    pointer-events:none;
-  `;
-  document.body.appendChild(debugBox);
+  debugBox.textContent =
+    `game top: ${gameRect.top.toFixed(2)}
+game height: ${gameRect.height.toFixed(2)}
+game width: ${gameRect.width.toFixed(2)}
+
+drag top: ${dragRect.top.toFixed(2)}
+drag height: ${dragRect.height.toFixed(2)}
+drag width: ${dragRect.width.toFixed(2)}
+
+layoutWidth: ${layoutWidth.toFixed(2)}
+game / layout: ${(gameRect.width / layoutWidth).toFixed(4)}
+drag / layout: ${(dragRect.width / layoutWidth).toFixed(4)}
+
+scaleX: ${(gameRect.width / layoutWidth).toFixed(4)}
+scaleY: ${(gameRect.height / layoutHeight).toFixed(4)}`;
 }
 
-debugBox.textContent =
-  `game top:${gameRect.top.toFixed(1)}
-game height:${gameRect.height.toFixed(1)}
-drag top:${dragRect.top.toFixed(1)}
-drag height:${dragRect.height.toFixed(1)}
-scaleX:${(gameRect.width/layoutWidth).toFixed(4)}
-scaleY:${(gameRect.height/layoutHeight).toFixed(4)}`;
- 
-}
 const pieceTexture=new Image(),boardTexture=new Image();
 pieceTexture.src='assets/piece-texture.png';boardTexture.src='assets/board-texture.png';
 let assetsReady=0;[pieceTexture,boardTexture].forEach(img=>img.onload=()=>{assetsReady++;draw();});
