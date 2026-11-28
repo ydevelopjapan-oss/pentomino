@@ -456,18 +456,22 @@ function checkDragScale(){
   }
 
   debugBox.textContent =
-    `game top: ${gameRect.top.toFixed(2)}
-game height: ${gameRect.height.toFixed(2)}
+`game left: ${gameRect.left.toFixed(2)}
+game right: ${gameRect.right.toFixed(2)}
 game width: ${gameRect.width.toFixed(2)}
 
-drag top: ${dragRect.top.toFixed(2)}
-drag height: ${dragRect.height.toFixed(2)}
+drag left: ${dragRect.left.toFixed(2)}
+drag right: ${dragRect.right.toFixed(2)}
 drag width: ${dragRect.width.toFixed(2)}
 
-layoutWidth: ${layoutWidth.toFixed(2)}
-game / layout: ${(gameRect.width / layoutWidth).toFixed(4)}
-drag / layout: ${(dragRect.width / layoutWidth).toFixed(4)}
+left difference: ${(gameRect.left - dragRect.left).toFixed(2)}
 
+game top: ${gameRect.top.toFixed(2)}
+game height: ${gameRect.height.toFixed(2)}
+drag top: ${dragRect.top.toFixed(2)}
+drag height: ${dragRect.height.toFixed(2)}
+
+layoutWidth: ${layoutWidth.toFixed(2)}
 scaleX: ${(gameRect.width / layoutWidth).toFixed(4)}
 scaleY: ${(gameRect.height / layoutHeight).toFixed(4)}`;
 }
