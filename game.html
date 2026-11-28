@@ -1593,23 +1593,34 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <script>
-const pentominoSounds = {};
-
-['pick.wav', 'place.wav', 'flip.wav', 'clear.wav'].forEach(file => {
-  const audio = new Audio('./audio/' + file);
-  audio.preload = 'auto';
-  audio.load();
-  pentominoSounds[file] = audio;
-});
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 window.playPentominoSound = function(file) {
-  const sound = pentominoSounds[file];
-  if (!sound) return;
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
 
-  sound.currentTime = 0;
-  sound.play().catch(error => {
-    console.error('効果音再生エラー:', file, error);
-  });
+  if (file !== 'pick.wav') return;
+
+  const now = audioContext.currentTime;
+
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  osc.type = 'sine';
+
+  osc.frequency.setValueAtTime(180, now);
+  osc.frequency.exponentialRampToValueAtTime(90, now + 0.09);
+
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.35, now + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.13);
 };
 </script>
 
