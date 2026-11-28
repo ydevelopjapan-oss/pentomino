@@ -409,13 +409,24 @@ stage.addEventListener('selectstart', e => {
 });
 
 function resizeDragLayer(){
-  const width=stage.clientWidth;
-  const height=stage.clientHeight;
+  const gameRect = canvas.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
 
-  dragCanvas.width=Math.round(width*dpr);
-  dragCanvas.height=Math.round(height*dpr);
+  const left =
+    gameRect.left - stageRect.left - stage.clientLeft;
 
-  dragCtx.setTransform(dpr,0,0,dpr,0,0);
+  const top =
+    gameRect.top - stageRect.top - stage.clientTop;
+
+  dragCanvas.style.left = left + 'px';
+  dragCanvas.style.top = top + 'px';
+  dragCanvas.style.width = gameRect.width + 'px';
+  dragCanvas.style.height = gameRect.height + 'px';
+
+  dragCanvas.width = Math.round(gameRect.width * dpr);
+  dragCanvas.height = Math.round(gameRect.height * dpr);
+
+  dragCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 function checkDragScale(){
   const gameRect = canvas.getBoundingClientRect();
