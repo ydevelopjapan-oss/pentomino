@@ -417,6 +417,28 @@ function resizeDragLayer(){
 
   dragCtx.setTransform(dpr,0,0,dpr,0,0);
 }
+function checkDragScale(){
+  const gameRect = canvas.getBoundingClientRect();
+  const dragRect = dragCanvas.getBoundingClientRect();
+
+  console.log('盤面キャンバス:', {
+    top: gameRect.top,
+    height: gameRect.height,
+    width: gameRect.width
+  });
+
+  console.log('ドラッグキャンバス:', {
+    top: dragRect.top,
+    height: dragRect.height,
+    width: dragRect.width
+  });
+
+  console.log('縮尺:', {
+    scaleX: gameRect.width / layoutWidth,
+    scaleY: gameRect.height / layoutHeight,
+    cell: cell
+  });
+}
 const pieceTexture=new Image(),boardTexture=new Image();
 pieceTexture.src='assets/piece-texture.png';boardTexture.src='assets/board-texture.png';
 let assetsReady=0;[pieceTexture,boardTexture].forEach(img=>img.onload=()=>{assetsReady++;draw();});
@@ -1303,6 +1325,7 @@ canvas.addEventListener('pointerdown',e=>{
  e.preventDefault();
 
  const pt=point(e);
+ checkDragScale();
  const hit=getPieceAt(pt.x,pt.y);
 
  if(!hit){
