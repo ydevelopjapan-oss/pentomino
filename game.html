@@ -431,7 +431,14 @@ function resizeDragLayer(){
 function checkDragScale(){
   const gameRect = canvas.getBoundingClientRect();
   const dragRect = dragCanvas.getBoundingClientRect();
-
+debugBox.innerHTML += `
+  <br>--- 横幅チェック ---
+  <br>gameRect.width: ${gameRect.width.toFixed(2)}
+  <br>dragRect.width: ${dragRect.width.toFixed(2)}
+  <br>layoutWidth: ${layoutWidth.toFixed(2)}
+  <br>game / layout: ${(gameRect.width / layoutWidth).toFixed(4)}
+  <br>drag / layout: ${(dragRect.width / layoutWidth).toFixed(4)}
+`;
   console.log('盤面キャンバス:', {
     top: gameRect.top,
     height: gameRect.height,
